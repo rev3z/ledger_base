@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-func getCPUSample() (idle, total uint64) {
+func GetCPUSample() (idle, total uint64) {
 	//读取/proc/stat内容
 	contents, err := ioutil.ReadFile("/proc/stat")
 	if err != nil {
@@ -105,9 +105,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	idle0, total0 := getCPUSample()
+	idle0, total0 := GetCPUSample()
 	time.Sleep(3 * time.Second)
-	idle1, total1 := getCPUSample()
+	idle1, total1 := GetCPUSample()
 
 	idleTicks := float64(idle1 - idle0)
 	totalTicks := float64(total1 - total0)
