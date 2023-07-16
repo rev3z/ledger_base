@@ -23,8 +23,8 @@ import (
 	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
-	"golang.org/x/crypto/sha3"
 	"github.com/ethereum/go-ethereum/rlp"
+	"golang.org/x/crypto/sha3"
 )
 
 type hasher struct {
@@ -36,7 +36,7 @@ type hasher struct {
 // hashers live in a global pool.
 var hasherPool = sync.Pool{
 	New: func() interface{} {
-		return &hasher{tmp: new(bytes.Buffer), sha: sha3.NewKeccak256()}
+		return &hasher{tmp: new(bytes.Buffer), sha: sha3.NewLegacyKeccak256()}
 	},
 }
 
@@ -91,7 +91,7 @@ func (h *hasher) hash(n node, db DatabaseWriter, p []byte, force bool) (node, no
 	// n为本func中的node，collapsed、cached是其本节点的copy，要注意collapsed用作store，所以会Hex转为Compact
 	// 如果n没有没有子节点了，则在hashChildren中返回继续执行store，如果由子节点，则在hashChildren中调用hash继续递归遍历。
 	// 获取当前节点的collapsed、cache和prefix，留作store使用
-	collapsed, cached, prefix,err := h.hashChildren(n, p, db)
+	collapsed, cached, prefix, err := h.hashChildren(n, p, db)
 	if err != nil {
 		return hashNode{}, n, err
 	}
@@ -126,8 +126,8 @@ func (h *hasher) hash(n node, db DatabaseWriter, p []byte, force bool) (node, no
 // as a replacement for the original node with the child hashes cached in.
 // cache变量接管了原来的Trie树的完整结构，collapsed变量把子节点替换成子节点的hash值
 
-/// 为了应对Add Prefix，hashChildren方法需要多一个参数来表示prefix
-func (h *hasher) hashChildren(original node, p []byte, db DatabaseWriter) (node, node,[]byte, error) {
+// / 为了应对Add Prefix，hashChildren方法需要多一个参数来表示prefix
+func (h *hasher) hashChildren(original node, p []byte, db DatabaseWriter) (node, node, []byte, error) {
 	var err error
 	//var num byte
 	//if p == nil{
@@ -163,7 +163,7 @@ func (h *hasher) hashChildren(original node, p []byte, db DatabaseWriter) (node,
 			collapsed.Val = valueNode(nil) // Ensure that nil children are encoded as empty strings.
 		}
 		// 返回collapsed(Compact Encoding)和cached(原来的的结构),以及此节点的Prefix
-		return collapsed, cached, p,nil
+		return collapsed, cached, p, nil
 	// 当前节点是fullNode, 那么遍历每个子节点，把每个子节点替换成子节点的Hash值(使用hash递归)，
 	case *fullNode:
 		// Hash the full node's children, caching the newly hashed subtrees
@@ -177,7 +177,7 @@ func (h *hasher) hashChildren(original node, p []byte, db DatabaseWriter) (node,
 				//p = append(prefix, PrefixFullNode...)
 				collapsed.Children[i], cached.Children[i], err = h.hash(n.Children[i], db, p, false)
 				if err != nil {
-					return original, original, p ,err
+					return original, original, p, err
 				}
 			} else {
 				collapsed.Children[i] = valueNode(nil) // Ensure that nil children are encoded as empty strings.
@@ -192,16 +192,17 @@ func (h *hasher) hashChildren(original node, p []byte, db DatabaseWriter) (node,
 	default:
 		// 没有子节点，直接返回
 		// Value and hash nodes don't have children so they're left as were
-		return n, original, nil,nil
+		return n, original, nil, nil
 	}
 }
+
 // store方法，如果一个node的所有子节点都替换成了子节点的hash值，那么直接调用rlp.Encode方法对这个节点进行编码，
 // 如果编码后的值小于32， 并且这个节点不是根节点，那么就把他们直接存储在他们的父节点里面，否者调用h.sha.Write方法
 // 进行hash计算，然后把hash值和编码后的数据存储到数据库里面，然后返回hash值。
 // 可以看到每个值大于32的节点的值和hash都存储到了数据库里面。
-//var f, err = os.OpenFile("E:/DB/200/StateKP2.txt",os.O_WRONLY | os.O_CREATE | os.O_APPEND,0666)
+// var f, err = os.OpenFile("E:/DB/200/StateKP2.txt",os.O_WRONLY | os.O_CREATE | os.O_APPEND,0666)
 // 为了应对Add Prefix，store方法需要多一个参数来表示prefix
-func (h *hasher) store(n node, db DatabaseWriter, p []byte,force bool) (node, error) {
+func (h *hasher) store(n node, db DatabaseWriter, p []byte, force bool) (node, error) {
 	// Don't store hashes or empty nodes.
 	// 已经折叠过的或者为空的，不存储？
 	if _, isHash := n.(hashNode); n == nil || isHash {
@@ -229,15 +230,15 @@ func (h *hasher) store(n node, db DatabaseWriter, p []byte,force bool) (node, er
 	}
 	// 对node哈希计算之后，再加前缀，然后再把哈希值传递给父节点
 	if db != nil {
-		switch n.(type){
+		switch n.(type) {
 		case *shortNode:
-			Prefix:=hexToKeybytes2(p)
-			hash=append(Prefix,h.sha.Sum(nil)...)
+			Prefix := hexToKeybytes2(p)
+			hash = append(Prefix, h.sha.Sum(nil)...)
 			//fmt.Println("This is shortNode.")
 			//fmt.Println("PrefixKey：",hash,len(hash))
 		case *fullNode:
-			Prefix:=hexToKeybytes2(p)
-			hash=append(Prefix,h.sha.Sum(nil)...)
+			Prefix := hexToKeybytes2(p)
+			hash = append(Prefix, h.sha.Sum(nil)...)
 			//fmt.Println("This is fullNode.")
 			//fmt.Println("PrefixKey：",hash,len(hash))
 		default:

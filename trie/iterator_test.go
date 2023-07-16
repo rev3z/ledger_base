@@ -23,7 +23,7 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/rev3z/ledger_base/leveldb/ethdb"
 )
 
 func TestIterator(t *testing.T) {
@@ -335,7 +335,7 @@ func TestIteratorContinueAfterSeekError(t *testing.T) {
 	for _, val := range testdata1 {
 		ctr.Update([]byte(val.k), []byte(val.v))
 	}
-	root, _ ,_:= ctr.Commit()
+	root, _, _ := ctr.Commit()
 	barNodeHash := common.HexToHash("05041990364eb72fcb1127652ce40d8bab765f2bfe53225b1170d276cc101c2e")
 	barNode, _ := db.Get(barNodeHash[:])
 	db.Delete(barNodeHash[:])

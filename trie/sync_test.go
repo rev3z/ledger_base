@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/rev3z/ledger_base/leveldb/ethdb"
 )
 
 // makeTestTrie create a sample test trie to test node-wise reconstruction.

@@ -1,22 +1,11 @@
 package trie
 
 import (
-	"Exper"
-	"MPT/ethdb"
 	"bufio"
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/rev3z/ledger_base/leveldb"
-	"github.com/rev3z/ledger_base/leveldb/cache"
-	"github.com/rev3z/ledger_base/leveldb/opt"
-	_ "github.com/rev3z/ledger_base/leveldb/opt"
 	_ "io"
 	log2 "log"
 	"math/big"
@@ -27,6 +16,18 @@ import (
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/rev3z/ledger_base/bench/exper"
+	"github.com/rev3z/ledger_base/leveldb"
+	"github.com/rev3z/ledger_base/leveldb/cache"
+	"github.com/rev3z/ledger_base/leveldb/ethdb"
+	"github.com/rev3z/ledger_base/leveldb/opt"
+	_ "github.com/rev3z/ledger_base/leveldb/opt"
 )
 
 var (
@@ -268,9 +269,9 @@ var (
 	Account [11000000][]byte
 	Txhash  [11000000][]byte
 	TXhash  [30000010][]byte
-	root1  = []byte{132, 0, 59, 165, 252, 52, 160, 208, 92, 17, 70, 162, 180, 18, 77, 149, 155, 195, 222, 231, 14, 5, 150, 170, 177, 231, 181, 6, 178, 219, 70, 170}
-	root2  = []byte{240, 114, 194, 194, 17, 14, 199, 231, 50, 103, 168, 144, 117, 47, 201, 67, 245, 137, 219, 7, 254, 234, 2, 157, 3, 151, 148, 51, 109, 16, 189, 157, 145}
-	root3  = []byte{16, 154, 137, 29, 83, 174, 214, 190, 39, 12, 125, 65, 0, 137, 9, 204, 24, 237, 131, 58, 150, 132, 67, 65, 170, 245, 4, 35, 252, 67, 249, 33, 134}
+	root1   = []byte{132, 0, 59, 165, 252, 52, 160, 208, 92, 17, 70, 162, 180, 18, 77, 149, 155, 195, 222, 231, 14, 5, 150, 170, 177, 231, 181, 6, 178, 219, 70, 170}
+	root2   = []byte{240, 114, 194, 194, 17, 14, 199, 231, 50, 103, 168, 144, 117, 47, 201, 67, 245, 137, 219, 7, 254, 234, 2, 157, 3, 151, 148, 51, 109, 16, 189, 157, 145}
+	root3   = []byte{16, 154, 137, 29, 83, 174, 214, 190, 39, 12, 125, 65, 0, 137, 9, 204, 24, 237, 131, 58, 150, 132, 67, 65, 170, 245, 4, 35, 252, 67, 249, 33, 134}
 	//root2 = []byte{240 ,215, 251, 217, 93, 11, 72, 181, 8, 163, 61 ,123, 113, 247, 127, 82, 177, 39, 173, 39, 27, 77, 242, 166, 83, 234, 9, 77, 143, 76, 232, 97, 250}
 )
 
@@ -370,7 +371,7 @@ func TestMix(t *testing.T) {
 func TestMixRandom(t *testing.T) {
 	//rroot:=[]byte{239, 104, 4, 219, 125, 134, 93, 238, 147, 175, 67, 122, 141, 12, 252, 148, 160, 72, 197, 46, 81, 57, 245, 6, 212, 190, 167, 146, 180, 95, 154, 228}
 	//root:=[]byte{240, 114, 194, 194, 17, 14, 199, 231, 50, 103, 168, 144, 117, 47, 201, 67, 245, 137, 219, 7, 254, 234, 2, 157, 3, 151, 148, 51, 109, 16, 189, 157, 145}
-	idle0, total0 := Exper.GetCPUSample()
+	idle0, total0 := exper.GetCPUSample()
 	db, _ := ethdb.NewLDBDatabase("/media/czh/sn/DB/Double-P", 16, 128)
 	//db,_ := ethdb.NewLDBDatabase2("C:/DB/State",16,512)
 	//db2,_ := ethdb.NewLDBDatabase2("C:/DB/Tx",16,512)
@@ -415,21 +416,21 @@ func TestMixRandom(t *testing.T) {
 	t1 := time.Now()
 	rand.Seed(0)
 	//num := 1000000
-	var old_hit  int64
-	var old_miss  int64
-	var old_hit2  int64
-	var old_miss2  int64
+	var old_hit int64
+	var old_miss int64
+	var old_hit2 int64
+	var old_miss2 int64
 	init_time := time.Now()
-	for q:=0;q<=10;q++{
+	for q := 0; q <= 10; q++ {
 		for i := 0; i < 100000; i++ {
-			for m:=0;m<(10-q);m++{
+			for m := 0; m < (10 - q); m++ {
 				j := rand.Intn(10000000)
 				tx = Txhash[j]
 				txh := BytesToHash(tx)
 				GetTransaction_s(*db, txh)
 				number++
 			}
-			for n:=0;n<q;n++{
+			for n := 0; n < q; n++ {
 				j := rand.Intn(10000000)
 				ac = Account[j]
 				tree, _ := News(root2, db)
@@ -442,20 +443,20 @@ func TestMixRandom(t *testing.T) {
 			//if i%100000 == 0 {
 			//	log2.Println(i)
 			//}
-			if number % 100000 == 0{
-				hit:=cache.HitNumber
-				miss:=cache.MissNumber
-				hit2:=cache.HitNumber2
-				miss2:=cache.MissNumber2
-				log2.Println("The hit rate of",(number/100000),"is:",float64(hit+hit2-old_hit-old_hit2)/float64(hit+miss+hit2+miss2-old_hit-old_miss-old_hit2-old_miss2))
+			if number%100000 == 0 {
+				hit := cache.HitNumber
+				miss := cache.MissNumber
+				hit2 := cache.HitNumber2
+				miss2 := cache.MissNumber2
+				log2.Println("The hit rate of", (number / 100000), "is:", float64(hit+hit2-old_hit-old_hit2)/float64(hit+miss+hit2+miss2-old_hit-old_miss-old_hit2-old_miss2))
 				old_miss = miss
 				old_hit = hit
 				old_miss2 = miss2
 				old_hit2 = hit2
 
-				ttt:=time.Now()
-				tttt:=ttt.Sub(init_time).Seconds()
-				fmt.Println("The QPS is:",float64(100000)/tttt)
+				ttt := time.Now()
+				tttt := ttt.Sub(init_time).Seconds()
+				fmt.Println("The QPS is:", float64(100000)/tttt)
 				init_time = ttt
 			}
 		}
@@ -470,13 +471,14 @@ func TestMixRandom(t *testing.T) {
 	fmt.Println(cache.HitNumber, cache.MissNumber, float64(cache.HitNumber)/float64(cache.HitNumber+cache.MissNumber))
 	fmt.Println(cache.HitNumber2, cache.MissNumber2, float64(cache.HitNumber2)/float64(cache.HitNumber2+cache.MissNumber2))
 	fmt.Println("命中率", float64(cache.HitNumber+cache.HitNumber2)/float64(cache.HitNumber2+cache.MissNumber2+cache.HitNumber+cache.MissNumber))
-	idle1, total1 := Exper.GetCPUSample()
+	idle1, total1 := exper.GetCPUSample()
 	idleTicks := float64(idle1 - idle0)
 	totalTicks := float64(total1 - total0)
 	cpuUsage := 100 * (totalTicks - idleTicks) / totalTicks
 	fmt.Printf("CPU usage is %f%% [busy: %f, total: %f]\n", cpuUsage, totalTicks-idleTicks, totalTicks)
 	runtime.GC()
 }
+
 // Test the Tx:Acc Ratio is 0:1 in Sc and Sk Distribution
 func TestAccZ(t *testing.T) {
 	//root:=[]byte{239, 104, 4, 219, 125, 134, 93, 238, 147, 175, 67, 122, 141, 12, 252, 148, 160, 72, 197, 46, 81, 57, 245, 6, 212, 190, 167, 146, 180, 95, 154, 228}
@@ -526,9 +528,10 @@ func TestAccZ(t *testing.T) {
 	fmt.Println("命中率", float64(cache.HitNumber+cache.HitNumber2)/float64(cache.HitNumber2+cache.MissNumber2+cache.HitNumber+cache.MissNumber))
 	runtime.GC()
 }
+
 // Test the Tx:Acc Ratio is 0:1 in Normal Random Distribution
 func TestAccR(t *testing.T) {
-	idle0, total0 := Exper.GetCPUSample()
+	idle0, total0 := exper.GetCPUSample()
 	//root:=[]byte{239, 104, 4, 219, 125, 134, 93, 238, 147, 175, 67, 122, 141, 12, 252, 148, 160, 72, 197, 46, 81, 57, 245, 6, 212, 190, 167, 146, 180, 95, 154, 228}
 	//root:=[]byte{240, 114, 194, 194, 17, 14, 199, 231, 50, 103, 168, 144, 117, 47, 201, 67, 245, 137, 219, 7, 254, 234, 2, 157, 3, 151, 148, 51, 109, 16, 189, 157, 145}
 
@@ -576,7 +579,7 @@ func TestAccR(t *testing.T) {
 	fmt.Println(cache.HitNumber, cache.MissNumber, float64(cache.HitNumber)/float64(cache.HitNumber+cache.MissNumber))
 	fmt.Println(cache.HitNumber2, cache.MissNumber2, float64(cache.HitNumber2)/float64(cache.HitNumber2+cache.MissNumber2))
 	fmt.Println("命中率", float64(cache.HitNumber+cache.HitNumber2)/float64(cache.HitNumber2+cache.MissNumber2+cache.HitNumber+cache.MissNumber))
-	idle1, total1 := Exper.GetCPUSample()
+	idle1, total1 := exper.GetCPUSample()
 	idleTicks := float64(idle1 - idle0)
 	totalTicks := float64(total1 - total0)
 	cpuUsage := 100 * (totalTicks - idleTicks) / totalTicks
@@ -584,12 +587,13 @@ func TestAccR(t *testing.T) {
 
 	runtime.GC()
 }
+
 // Test the Tx:Acc Ratio is 1:0 in Normal Random Distribution
 func TestTR(t *testing.T) {
 	//rroot:=[]byte{239, 104, 4, 219, 125, 134, 93, 238, 147, 175, 67, 122, 141, 12, 252, 148, 160, 72, 197, 46, 81, 57, 245, 6, 212, 190, 167, 146, 180, 95, 154, 228}
 	//root:=[]byte{240, 114, 194, 194, 17, 14, 199, 231, 50, 103, 168, 144, 117, 47, 201, 67, 245, 137, 219, 7, 254, 234, 2, 157, 3, 151, 148, 51, 109, 16, 189, 157, 145}
 	//132 0 59 165 252 52 160 208 92 17 70 162 180 18 77 149 155 195 222 231 14 5 150 170 177 231 181 6 178 219 70 170
-	idle0, total0 := Exper.GetCPUSample()
+	idle0, total0 := exper.GetCPUSample()
 	db, _ := ethdb.NewLDBDatabase("/media/czh/sn/DB/Tx", 16, 128)
 	f1, _ := os.Open("/media/czh/sn/record/Tx.txt")
 	s1 := bufio.NewScanner(f1)
@@ -630,7 +634,7 @@ func TestTR(t *testing.T) {
 	fmt.Println(cache.HitNumber, cache.MissNumber, float64(cache.HitNumber)/float64(cache.HitNumber+cache.MissNumber))
 	fmt.Println(cache.HitNumber2, cache.MissNumber2, float64(cache.HitNumber2)/float64(cache.HitNumber2+cache.MissNumber2))
 	fmt.Println("命中率", float64(cache.HitNumber+cache.HitNumber2)/float64(cache.HitNumber2+cache.MissNumber2+cache.HitNumber+cache.MissNumber))
-	idle1, total1 := Exper.GetCPUSample()
+	idle1, total1 := exper.GetCPUSample()
 
 	idleTicks := float64(idle1 - idle0)
 	totalTicks := float64(total1 - total0)
@@ -639,6 +643,7 @@ func TestTR(t *testing.T) {
 	fmt.Printf("CPU usage is %f%% [busy: %f, total: %f]\n", cpuUsage, totalTicks-idleTicks, totalTicks)
 	runtime.GC()
 }
+
 // Test the Tx:Acc Ratio is 1:0 in Sc and Sk Distribution
 func TestTZ(t *testing.T) {
 	//root:=[]byte{239, 104, 4, 219, 125, 134, 93, 238, 147, 175, 67, 122, 141, 12, 252, 148, 160, 72, 197, 46, 81, 57, 245, 6, 212, 190, 167, 146, 180, 95, 154, 228}
@@ -775,7 +780,7 @@ func TestFile(t *testing.T) {
 }
 
 func TestFile2(t *testing.T) {
-	idle0, total0 := Exper.GetCPUSample()
+	idle0, total0 := exper.GetCPUSample()
 	//root:=[]byte{239, 104, 4, 219, 125, 134, 93, 238, 147, 175, 67, 122, 141, 12, 252, 148, 160, 72, 197, 46, 81, 57, 245, 6, 212, 190, 167, 146, 180, 95, 154, 228}
 	//root:=[]byte{240, 114, 194, 194, 17, 14, 199, 231, 50, 103, 168, 144, 117, 47, 201, 67, 245, 137, 219, 7, 254, 234, 2, 157, 3, 151, 148, 51, 109, 16, 189, 157, 145}
 	db, _ := ethdb.NewLDBDatabase("/media/czh/sn/DB/Single", 16, 1024)
@@ -821,7 +826,7 @@ func TestFile2(t *testing.T) {
 	fmt.Println(cache.HitNumber, cache.MissNumber, float64(cache.HitNumber)/float64(cache.HitNumber+cache.MissNumber))
 	fmt.Println(cache.HitNumber2, cache.MissNumber2, float64(cache.HitNumber2)/float64(cache.HitNumber2+cache.MissNumber2))
 	fmt.Println("命中率", float64(cache.HitNumber+cache.HitNumber2)/float64(cache.HitNumber2+cache.MissNumber2+cache.HitNumber+cache.MissNumber))
-	idle1, total1 := Exper.GetCPUSample()
+	idle1, total1 := exper.GetCPUSample()
 	idleTicks := float64(idle1 - idle0)
 	totalTicks := float64(total1 - total0)
 	cpuUsage := 100 * (totalTicks - idleTicks) / totalTicks
@@ -854,13 +859,14 @@ func TestFile3(t *testing.T) {
 	fmt.Println(index2)
 
 }
+
 // Test All workloads with Sc and Sk Distribution in the Tx:Acc Ratio of 1:1
 func TestMixZipf(t *testing.T) {
 	//	root := []byte{239, 104, 4, 219, 125, 134, 93, 238, 147, 175, 67, 122, 141, 12, 252, 148, 160, 72, 197, 46, 81, 57, 245, 6, 212, 190, 167, 146, 180, 95, 154, 228}
 	//root:=[]byte{240, 114, 194, 194, 17, 14,
 	//199, 231, 50, 103, 168, 144, 117, 47, 201, 67, 245, 137, 219, 7, 254, 234, 2, 157, 3, 151, 148, 51, 109, 16, 189, 157, 145}
 	//db,_ := ethdb.NewLDBDatabase("C:/DB/Double-P",16,1024)
-	idle0, total0 := Exper.GetCPUSample()
+	idle0, total0 := exper.GetCPUSample()
 	db, _ := ethdb.NewLDBDatabase2("/media/czh/sn/DB/Original", 16, 128)
 	//	db2, _ := ethdb.NewLDBDatabase2("/media/czh/sn/DB/Tx", 16, 128)
 	//tree, _ := News(root, db)
@@ -916,7 +922,7 @@ func TestMixZipf(t *testing.T) {
 			Count++
 		}
 		number++
-		if number % 100000 == 0{
+		if number%100000 == 0 {
 			log2.Println(number)
 		}
 	}
@@ -932,7 +938,7 @@ func TestMixZipf(t *testing.T) {
 	fmt.Println(cache.HitNumber2, cache.MissNumber2, float64(cache.HitNumber2)/float64(cache.HitNumber2+cache.MissNumber2))
 	fmt.Println("命中率", float64(cache.HitNumber+cache.HitNumber2)/float64(cache.HitNumber2+cache.MissNumber2+cache.HitNumber+cache.MissNumber))
 
-	idle1, total1 := Exper.GetCPUSample()
+	idle1, total1 := exper.GetCPUSample()
 	idleTicks := float64(idle1 - idle0)
 	totalTicks := float64(total1 - total0)
 	cpuUsage := 100 * (totalTicks - idleTicks) / totalTicks
@@ -940,123 +946,14 @@ func TestMixZipf(t *testing.T) {
 
 	runtime.GC()
 }
+
 // Test All workloads with Sc and Sk Distribution in the Tx:Acc Ratio of 3:7
 func TestMixZ3(t *testing.T) {
 	//	root := []byte{239, 104, 4, 219, 125, 134, 93, 238, 147, 175, 67, 122, 141, 12, 252, 148, 160, 72, 197, 46, 81, 57, 245, 6, 212, 190, 167, 146, 180, 95, 154, 228}
 	//root:=[]byte{240, 114, 194, 194, 17, 14,
 	//199, 231, 50, 103, 168, 144, 117, 47, 201, 67, 245, 137, 219, 7, 254, 234, 2, 157, 3, 151, 148, 51, 109, 16, 189, 157, 145}
 	//db,_ := ethdb.NewLDBDatabase("C:/DB/Double-P",16,1024)
-	idle0, total0 := Exper.GetCPUSample()
-	db, _ := ethdb.NewLDBDatabase("/media/czh/sn/DB/Original", 16, 128)
-//	db2, _ := ethdb.NewLDBDatabase("/media/czh/sn/DB/Tx", 16, 128)
-	//tree, _ := News(root, db)
-	f, _ := os.Open("/media/czh/sn/record/UniqueA2.txt")
-	s := bufio.NewScanner(f)
-	Count_T := 0
-	Count_A := 0
-	var shijian float64
-	for s.Scan() {
-		str := s.Text()
-		key, _ := hex.DecodeString(str[:])
-		// 插入MPT
-		Account[Count_A] = key
-		Count_A++
-		if Count_A == 10100000 {
-			break
-		}
-	}
-	_ = f.Close()
-
-	f1, _ := os.Open("/media/czh/sn/record/Tx.txt")
-	s1 := bufio.NewScanner(f1)
-	Txnumber := 0
-	for s1.Scan() {
-		str := s1.Text()
-		key, _ := hex.DecodeString(str[:])
-		// 插入MPT
-		if Txnumber%8 == 0 {
-			Txhash[Count_T] = key
-			Count_T++
-		}
-		Txnumber++
-		if Count_T == 10100000 {
-			break
-		}
-	}
-	_ = f1.Close()
-	number := 0
-	Count2 := 0
-	t1 := time.Now()
-	f3,_:=os.Open("/media/czh/sn/record/300.txt")
-	defer f3.Close()
-	s3:=bufio.NewScanner(f3)
-	index3:=0
-	var Array1[10000000]int
-	for s3.Scan(){
-		str:=s3.Text()
-		sort, _ :=strconv.Atoi(str)
-		Array1[index3] = sort
-		index3++
-	}
-	f7,_:=os.Open("/media/czh/sn/record/700.txt")
-	defer f7.Close()
-	s7:=bufio.NewScanner(f7)
-	index7:=0
-	var Array2[10000000]int
-	for s7.Scan(){
-		str:=s7.Text()
-		sort, _ :=strconv.Atoi(str)
-		Array2[index7] = sort
-		index7++
-	}
-	count3:=0
-	count7:=0
-	for i:=0;i<1000000;i++{
-		 for m:=0;m<3;m++{
-			 tx =  Txhash[Array1[count3]]
-			 txh := BytesToHash(tx)
-			 GetTransaction_s(*db, txh)
-			 count3++
-		 }
-		 for n:=0;n<7;n++{
-			 ac = Account[Array2[count7]]
-			 tree, _ := News(root3, db)
-			 v := tree.Get(crypto.Keccak256(ac))
-			 if v == nil {
-				 Count++
-			 }
-			 count7++
-		 }
-		 if i % 100000 == 0{
-		 	log2.Println(i)
-		 }
-	}
-	t2 := time.Now()
-	shijian += t2.Sub(t1).Seconds()
-	TimeTx := tt1 + tt2 + tt3
-	fmt.Println("总时间耗费：", shijian)
-	fmt.Println("nil计数", Count, Count2, number)
-	fmt.Println("kv数目,总时间，交易时间", ethdb.Count, ethdb.T, TimeTx, shijian)
-	fmt.Println("qps:", float64(10000000)/ethdb.T)
-	fmt.Println(cache.HitNumber, cache.MissNumber, float64(cache.HitNumber)/float64(cache.HitNumber+cache.MissNumber))
-	fmt.Println(cache.HitNumber2, cache.MissNumber2, float64(cache.HitNumber2)/float64(cache.HitNumber2+cache.MissNumber2))
-	fmt.Println("命中率", float64(cache.HitNumber+cache.HitNumber2)/float64(cache.HitNumber2+cache.MissNumber2+cache.HitNumber+cache.MissNumber))
-	fmt.Println(count3,count7)
-	idle1, total1 := Exper.GetCPUSample()
-	idleTicks := float64(idle1 - idle0)
-	totalTicks := float64(total1 - total0)
-	cpuUsage := 100 * (totalTicks - idleTicks) / totalTicks
-	fmt.Printf("CPU usage is %f%% [busy: %f, total: %f]\n", cpuUsage, totalTicks-idleTicks, totalTicks)
-
-	runtime.GC()
-}
-// Test All workloads with Sc and Sk Distribution in the Tx:Acc Ratio of 7:3
-func TestMixZ7(t *testing.T) {
-	//	root := []byte{239, 104, 4, 219, 125, 134, 93, 238, 147, 175, 67, 122, 141, 12, 252, 148, 160, 72, 197, 46, 81, 57, 245, 6, 212, 190, 167, 146, 180, 95, 154, 228}
-	//root:=[]byte{240, 114, 194, 194, 17, 14,
-	//199, 231, 50, 103, 168, 144, 117, 47, 201, 67, 245, 137, 219, 7, 254, 234, 2, 157, 3, 151, 148, 51, 109, 16, 189, 157, 145}
-	//db,_ := ethdb.NewLDBDatabase("C:/DB/Double-P",16,1024)
-	idle0, total0 := Exper.GetCPUSample()
+	idle0, total0 := exper.GetCPUSample()
 	db, _ := ethdb.NewLDBDatabase("/media/czh/sn/DB/Original", 16, 128)
 	//	db2, _ := ethdb.NewLDBDatabase("/media/czh/sn/DB/Tx", 16, 128)
 	//tree, _ := News(root, db)
@@ -1097,47 +994,47 @@ func TestMixZ7(t *testing.T) {
 	number := 0
 	Count2 := 0
 	t1 := time.Now()
-	f3,_:=os.Open("/media/czh/sn/record/300.txt")
+	f3, _ := os.Open("/media/czh/sn/record/300.txt")
 	defer f3.Close()
-	s3:=bufio.NewScanner(f3)
-	index3:=0
-	var Array1[10000000]int
-	for s3.Scan(){
-		str:=s3.Text()
-		sort, _ :=strconv.Atoi(str)
+	s3 := bufio.NewScanner(f3)
+	index3 := 0
+	var Array1 [10000000]int
+	for s3.Scan() {
+		str := s3.Text()
+		sort, _ := strconv.Atoi(str)
 		Array1[index3] = sort
 		index3++
 	}
-	f7,_:=os.Open("/media/czh/sn/record/700.txt")
+	f7, _ := os.Open("/media/czh/sn/record/700.txt")
 	defer f7.Close()
-	s7:=bufio.NewScanner(f7)
-	index7:=0
-	var Array2[10000000]int
-	for s7.Scan(){
-		str:=s7.Text()
-		sort, _ :=strconv.Atoi(str)
+	s7 := bufio.NewScanner(f7)
+	index7 := 0
+	var Array2 [10000000]int
+	for s7.Scan() {
+		str := s7.Text()
+		sort, _ := strconv.Atoi(str)
 		Array2[index7] = sort
 		index7++
 	}
-	count3:=0
-	count7:=0
-	for i:=0;i<1000000;i++{
-		for m:=0;m<7;m++{
-			tx =  Txhash[Array2[count7]]
+	count3 := 0
+	count7 := 0
+	for i := 0; i < 1000000; i++ {
+		for m := 0; m < 3; m++ {
+			tx = Txhash[Array1[count3]]
 			txh := BytesToHash(tx)
 			GetTransaction_s(*db, txh)
-			count7++
+			count3++
 		}
-		for n:=0;n<3;n++{
-			ac = Account[Array1[count3]]
+		for n := 0; n < 7; n++ {
+			ac = Account[Array2[count7]]
 			tree, _ := News(root3, db)
 			v := tree.Get(crypto.Keccak256(ac))
 			if v == nil {
 				Count++
 			}
-			count3++
+			count7++
 		}
-		if i % 100000 == 0{
+		if i%100000 == 0 {
 			log2.Println(i)
 		}
 	}
@@ -1151,8 +1048,119 @@ func TestMixZ7(t *testing.T) {
 	fmt.Println(cache.HitNumber, cache.MissNumber, float64(cache.HitNumber)/float64(cache.HitNumber+cache.MissNumber))
 	fmt.Println(cache.HitNumber2, cache.MissNumber2, float64(cache.HitNumber2)/float64(cache.HitNumber2+cache.MissNumber2))
 	fmt.Println("命中率", float64(cache.HitNumber+cache.HitNumber2)/float64(cache.HitNumber2+cache.MissNumber2+cache.HitNumber+cache.MissNumber))
-	fmt.Println(count3,count7)
-	idle1, total1 := Exper.GetCPUSample()
+	fmt.Println(count3, count7)
+	idle1, total1 := exper.GetCPUSample()
+	idleTicks := float64(idle1 - idle0)
+	totalTicks := float64(total1 - total0)
+	cpuUsage := 100 * (totalTicks - idleTicks) / totalTicks
+	fmt.Printf("CPU usage is %f%% [busy: %f, total: %f]\n", cpuUsage, totalTicks-idleTicks, totalTicks)
+
+	runtime.GC()
+}
+
+// Test All workloads with Sc and Sk Distribution in the Tx:Acc Ratio of 7:3
+func TestMixZ7(t *testing.T) {
+	//	root := []byte{239, 104, 4, 219, 125, 134, 93, 238, 147, 175, 67, 122, 141, 12, 252, 148, 160, 72, 197, 46, 81, 57, 245, 6, 212, 190, 167, 146, 180, 95, 154, 228}
+	//root:=[]byte{240, 114, 194, 194, 17, 14,
+	//199, 231, 50, 103, 168, 144, 117, 47, 201, 67, 245, 137, 219, 7, 254, 234, 2, 157, 3, 151, 148, 51, 109, 16, 189, 157, 145}
+	//db,_ := ethdb.NewLDBDatabase("C:/DB/Double-P",16,1024)
+	idle0, total0 := exper.GetCPUSample()
+	db, _ := ethdb.NewLDBDatabase("/media/czh/sn/DB/Original", 16, 128)
+	//	db2, _ := ethdb.NewLDBDatabase("/media/czh/sn/DB/Tx", 16, 128)
+	//tree, _ := News(root, db)
+	f, _ := os.Open("/media/czh/sn/record/UniqueA2.txt")
+	s := bufio.NewScanner(f)
+	Count_T := 0
+	Count_A := 0
+	var shijian float64
+	for s.Scan() {
+		str := s.Text()
+		key, _ := hex.DecodeString(str[:])
+		// 插入MPT
+		Account[Count_A] = key
+		Count_A++
+		if Count_A == 10100000 {
+			break
+		}
+	}
+	_ = f.Close()
+
+	f1, _ := os.Open("/media/czh/sn/record/Tx.txt")
+	s1 := bufio.NewScanner(f1)
+	Txnumber := 0
+	for s1.Scan() {
+		str := s1.Text()
+		key, _ := hex.DecodeString(str[:])
+		// 插入MPT
+		if Txnumber%8 == 0 {
+			Txhash[Count_T] = key
+			Count_T++
+		}
+		Txnumber++
+		if Count_T == 10100000 {
+			break
+		}
+	}
+	_ = f1.Close()
+	number := 0
+	Count2 := 0
+	t1 := time.Now()
+	f3, _ := os.Open("/media/czh/sn/record/300.txt")
+	defer f3.Close()
+	s3 := bufio.NewScanner(f3)
+	index3 := 0
+	var Array1 [10000000]int
+	for s3.Scan() {
+		str := s3.Text()
+		sort, _ := strconv.Atoi(str)
+		Array1[index3] = sort
+		index3++
+	}
+	f7, _ := os.Open("/media/czh/sn/record/700.txt")
+	defer f7.Close()
+	s7 := bufio.NewScanner(f7)
+	index7 := 0
+	var Array2 [10000000]int
+	for s7.Scan() {
+		str := s7.Text()
+		sort, _ := strconv.Atoi(str)
+		Array2[index7] = sort
+		index7++
+	}
+	count3 := 0
+	count7 := 0
+	for i := 0; i < 1000000; i++ {
+		for m := 0; m < 7; m++ {
+			tx = Txhash[Array2[count7]]
+			txh := BytesToHash(tx)
+			GetTransaction_s(*db, txh)
+			count7++
+		}
+		for n := 0; n < 3; n++ {
+			ac = Account[Array1[count3]]
+			tree, _ := News(root3, db)
+			v := tree.Get(crypto.Keccak256(ac))
+			if v == nil {
+				Count++
+			}
+			count3++
+		}
+		if i%100000 == 0 {
+			log2.Println(i)
+		}
+	}
+	t2 := time.Now()
+	shijian += t2.Sub(t1).Seconds()
+	TimeTx := tt1 + tt2 + tt3
+	fmt.Println("总时间耗费：", shijian)
+	fmt.Println("nil计数", Count, Count2, number)
+	fmt.Println("kv数目,总时间，交易时间", ethdb.Count, ethdb.T, TimeTx, shijian)
+	fmt.Println("qps:", float64(10000000)/ethdb.T)
+	fmt.Println(cache.HitNumber, cache.MissNumber, float64(cache.HitNumber)/float64(cache.HitNumber+cache.MissNumber))
+	fmt.Println(cache.HitNumber2, cache.MissNumber2, float64(cache.HitNumber2)/float64(cache.HitNumber2+cache.MissNumber2))
+	fmt.Println("命中率", float64(cache.HitNumber+cache.HitNumber2)/float64(cache.HitNumber2+cache.MissNumber2+cache.HitNumber+cache.MissNumber))
+	fmt.Println(count3, count7)
+	idle1, total1 := exper.GetCPUSample()
 	idleTicks := float64(idle1 - idle0)
 	totalTicks := float64(total1 - total0)
 	cpuUsage := 100 * (totalTicks - idleTicks) / totalTicks
@@ -1166,7 +1174,7 @@ func TestCacheZipfian(t *testing.T) {
 	//root:=[]byte{240, 114, 194, 194, 17, 14,
 	//199, 231, 50, 103, 168, 144, 117, 47, 201, 67, 245, 137, 219, 7, 254, 234, 2, 157, 3, 151, 148, 51, 109, 16, 189, 157, 145}
 	//db,_ := ethdb.NewLDBDatabase("C:/DB/Double-P",16,1024)
-	idle0, total0 := Exper.GetCPUSample()
+	idle0, total0 := exper.GetCPUSample()
 	db, _ := ethdb.NewLDBDatabase("/media/czh/sn/DB/Double-P", 16, 128)
 	//tree, _ := News(root, db)
 	f, _ := os.Open("/media/czh/sn/record/UniqueA2.txt")
@@ -1206,39 +1214,39 @@ func TestCacheZipfian(t *testing.T) {
 	number := 0
 	Count2 := 0
 	t1 := time.Now()
-	f3,_:=os.Open("/media/czh/sn/record/Sk1_450.txt")
+	f3, _ := os.Open("/media/czh/sn/record/Sk1_450.txt")
 	defer f3.Close()
-	s3:=bufio.NewScanner(f3)
-	index3:=0
-	var Array1[10000000]int
-	for s3.Scan(){
-		str:=s3.Text()
-		sort, _ :=strconv.Atoi(str)
+	s3 := bufio.NewScanner(f3)
+	index3 := 0
+	var Array1 [10000000]int
+	for s3.Scan() {
+		str := s3.Text()
+		sort, _ := strconv.Atoi(str)
 		Array1[index3] = sort
 		index3++
 	}
-	f7,_:=os.Open("/media/czh/sn/record/Sk2_450.txt")
+	f7, _ := os.Open("/media/czh/sn/record/Sk2_450.txt")
 	defer f7.Close()
-	s7:=bufio.NewScanner(f7)
-	index7:=0
-	var Array2[10000000]int
-	for s7.Scan(){
-		str:=s7.Text()
-		sort, _ :=strconv.Atoi(str)
+	s7 := bufio.NewScanner(f7)
+	index7 := 0
+	var Array2 [10000000]int
+	for s7.Scan() {
+		str := s7.Text()
+		sort, _ := strconv.Atoi(str)
 		Array2[index7] = sort
 		index7++
 	}
-	count3:=0
-	count7:=0
-	var old_hit  int64
-	var old_miss  int64
-	var old_hit2  int64
-	var old_miss2  int64
+	count3 := 0
+	count7 := 0
+	var old_hit int64
+	var old_miss int64
+	var old_hit2 int64
+	var old_miss2 int64
 	var old_time float64
 	init_time := time.Now()
-	for q:=0;q<=10;q++{
+	for q := 0; q <= 10; q++ {
 		for i := 0; i < 100000; i++ {
-			for m:=0;m<(10-q);m++{
+			for m := 0; m < (10 - q); m++ {
 				j := Array1[count3]
 				tx = Txhash[j]
 				txh := BytesToHash(tx)
@@ -1246,13 +1254,13 @@ func TestCacheZipfian(t *testing.T) {
 				count3++
 				number++
 			}
-			for n:=0;n<q;n++{
+			for n := 0; n < q; n++ {
 				j := Array2[count7]
 				ac = Account[j]
 				tree, _ := News(root2, db)
 				v2 := tree.Get(crypto.Keccak256(ac))
 				if v2 == nil {
-					Count2++   //记录nil
+					Count2++ //记录nil
 				}
 				count7++
 				number++
@@ -1260,20 +1268,20 @@ func TestCacheZipfian(t *testing.T) {
 			//if i%100000 == 0 {
 			//	log2.Println(i)
 			//}
-			if number % 100000 == 0{
-				hit:=cache.HitNumber
-				miss:=cache.MissNumber
-				hit2:=cache.HitNumber2
-				miss2:=cache.MissNumber2
-				log2.Println("The hit rate of",(number/100000),"is:",float64(hit+hit2-old_hit-old_hit2)/float64(hit+miss+hit2+miss2-old_hit-old_miss-old_hit2-old_miss2))
+			if number%100000 == 0 {
+				hit := cache.HitNumber
+				miss := cache.MissNumber
+				hit2 := cache.HitNumber2
+				miss2 := cache.MissNumber2
+				log2.Println("The hit rate of", (number / 100000), "is:", float64(hit+hit2-old_hit-old_hit2)/float64(hit+miss+hit2+miss2-old_hit-old_miss-old_hit2-old_miss2))
 				old_miss = miss
 				old_hit = hit
 				old_miss2 = miss2
 				old_hit2 = hit2
 
-				ttt:=time.Now()
-				tttt:=ttt.Sub(init_time).Seconds()
-				fmt.Println("The QPS is:",float64(100000)/tttt,"The Real QPS is:",float64(100000)/(ethdb.T-old_time))
+				ttt := time.Now()
+				tttt := ttt.Sub(init_time).Seconds()
+				fmt.Println("The QPS is:", float64(100000)/tttt, "The Real QPS is:", float64(100000)/(ethdb.T-old_time))
 				old_time = ethdb.T
 				init_time = ttt
 			}
@@ -1309,8 +1317,8 @@ func TestCacheZipfian(t *testing.T) {
 	fmt.Println(cache.HitNumber, cache.MissNumber, float64(cache.HitNumber)/float64(cache.HitNumber+cache.MissNumber))
 	fmt.Println(cache.HitNumber2, cache.MissNumber2, float64(cache.HitNumber2)/float64(cache.HitNumber2+cache.MissNumber2))
 	fmt.Println("命中率", float64(cache.HitNumber+cache.HitNumber2)/float64(cache.HitNumber2+cache.MissNumber2+cache.HitNumber+cache.MissNumber))
-	fmt.Println(count3,count7)
-	idle1, total1 := Exper.GetCPUSample()
+	fmt.Println(count3, count7)
+	idle1, total1 := exper.GetCPUSample()
 	idleTicks := float64(idle1 - idle0)
 	totalTicks := float64(total1 - total0)
 	cpuUsage := 100 * (totalTicks - idleTicks) / totalTicks
@@ -1325,7 +1333,7 @@ func TestMixR(t *testing.T) {
 	//root:=[]byte{240, 114, 194, 194, 17, 14,
 	//199, 231, 50, 103, 168, 144, 117, 47, 201, 67, 245, 137, 219, 7, 254, 234, 2, 157, 3, 151, 148, 51, 109, 16, 189, 157, 145}
 	//db,_ := ethdb.NewLDBDatabase("C:/DB/Double-P",16,1024)
-	idle0, total0 := Exper.GetCPUSample()
+	idle0, total0 := exper.GetCPUSample()
 	db, _ := ethdb.NewLDBDatabase("/media/czh/sn/DB/Original", 16, 128)
 	f, _ := os.Open("/media/czh/sn/record/UniqueA2.txt")
 	s := bufio.NewScanner(f)
@@ -1364,22 +1372,22 @@ func TestMixR(t *testing.T) {
 	number := 0
 	Count2 := 0
 	t1 := time.Now()
-	countT:=0
-	countA:=0
-	for i:=0;i<5000000;i++{
-		num:=rand.Intn(10000000)
+	countT := 0
+	countA := 0
+	for i := 0; i < 5000000; i++ {
+		num := rand.Intn(10000000)
 		tx = Txhash[num]
 		txh := BytesToHash(tx)
-		GetTransaction_s(*db,txh)
+		GetTransaction_s(*db, txh)
 		countT++
 		ac = Account[num]
-		tree,_ := News(root3,db)
+		tree, _ := News(root3, db)
 		v := tree.Get(crypto.Keccak256(ac))
 		countA++
-		if v == nil{
+		if v == nil {
 			Count++
 		}
-		if i % 100000 == 0{
+		if i%100000 == 0 {
 			log2.Println(i)
 		}
 	}
@@ -1393,8 +1401,8 @@ func TestMixR(t *testing.T) {
 	fmt.Println(cache.HitNumber, cache.MissNumber, float64(cache.HitNumber)/float64(cache.HitNumber+cache.MissNumber))
 	fmt.Println(cache.HitNumber2, cache.MissNumber2, float64(cache.HitNumber2)/float64(cache.HitNumber2+cache.MissNumber2))
 	fmt.Println("命中率", float64(cache.HitNumber+cache.HitNumber2)/float64(cache.HitNumber2+cache.MissNumber2+cache.HitNumber+cache.MissNumber))
-	fmt.Println(countT,countA)
-	idle1, total1 := Exper.GetCPUSample()
+	fmt.Println(countT, countA)
+	idle1, total1 := exper.GetCPUSample()
 	idleTicks := float64(idle1 - idle0)
 	totalTicks := float64(total1 - total0)
 	cpuUsage := 100 * (totalTicks - idleTicks) / totalTicks
@@ -1402,13 +1410,14 @@ func TestMixR(t *testing.T) {
 
 	runtime.GC()
 }
+
 // Test Tx:Acc Ratio is 3:7  with Normal Random Distribution
 func TestMixR3(t *testing.T) {
 	//	root := []byte{239, 104, 4, 219, 125, 134, 93, 238, 147, 175, 67, 122, 141, 12, 252, 148, 160, 72, 197, 46, 81, 57, 245, 6, 212, 190, 167, 146, 180, 95, 154, 228}
 	//root:=[]byte{240, 114, 194, 194, 17, 14,
 	//199, 231, 50, 103, 168, 144, 117, 47, 201, 67, 245, 137, 219, 7, 254, 234, 2, 157, 3, 151, 148, 51, 109, 16, 189, 157, 145}
 	//db,_ := ethdb.NewLDBDatabase("C:/DB/Double-P",16,1024)
-	idle0, total0 := Exper.GetCPUSample()
+	idle0, total0 := exper.GetCPUSample()
 	db, _ := ethdb.NewLDBDatabase("/media/czh/sn/DB/Original", 16, 128)
 	f, _ := os.Open("/media/czh/sn/record/UniqueA2.txt")
 	s := bufio.NewScanner(f)
@@ -1447,29 +1456,29 @@ func TestMixR3(t *testing.T) {
 	number := 0
 	Count2 := 0
 	t1 := time.Now()
-	countT:=0
-	countA:=0
-	for i:=0;i<1000000;i++{
-		for m:=0;m<3;m++{
-			num:=rand.Intn(10000000)
+	countT := 0
+	countA := 0
+	for i := 0; i < 1000000; i++ {
+		for m := 0; m < 3; m++ {
+			num := rand.Intn(10000000)
 			tx = Txhash[num]
 			txh := BytesToHash(tx)
-			GetTransaction_s(*db,txh)
+			GetTransaction_s(*db, txh)
 			countT++
 		}
 
-		for n:=0;n<7;n++{
-			num:=rand.Intn(10000000)
+		for n := 0; n < 7; n++ {
+			num := rand.Intn(10000000)
 			ac = Account[num]
-			tree,_ := News(root3,db)
+			tree, _ := News(root3, db)
 			v := tree.Get(crypto.Keccak256(ac))
 			countA++
-			if v == nil{
+			if v == nil {
 				Count++
 			}
 		}
 
-		if i % 100000 == 0{
+		if i%100000 == 0 {
 			log2.Println(i)
 		}
 	}
@@ -1483,8 +1492,8 @@ func TestMixR3(t *testing.T) {
 	fmt.Println(cache.HitNumber, cache.MissNumber, float64(cache.HitNumber)/float64(cache.HitNumber+cache.MissNumber))
 	fmt.Println(cache.HitNumber2, cache.MissNumber2, float64(cache.HitNumber2)/float64(cache.HitNumber2+cache.MissNumber2))
 	fmt.Println("命中率", float64(cache.HitNumber+cache.HitNumber2)/float64(cache.HitNumber2+cache.MissNumber2+cache.HitNumber+cache.MissNumber))
-	fmt.Println(countT,countA)
-	idle1, total1 := Exper.GetCPUSample()
+	fmt.Println(countT, countA)
+	idle1, total1 := exper.GetCPUSample()
 	idleTicks := float64(idle1 - idle0)
 	totalTicks := float64(total1 - total0)
 	cpuUsage := 100 * (totalTicks - idleTicks) / totalTicks
@@ -1492,13 +1501,14 @@ func TestMixR3(t *testing.T) {
 
 	runtime.GC()
 }
+
 // Test Tx:Acc Ratio is 7:3  with Normal Random Distribution
 func TestMixR7(t *testing.T) {
 	//	root := []byte{239, 104, 4, 219, 125, 134, 93, 238, 147, 175, 67, 122, 141, 12, 252, 148, 160, 72, 197, 46, 81, 57, 245, 6, 212, 190, 167, 146, 180, 95, 154, 228}
 	//root:=[]byte{240, 114, 194, 194, 17, 14,
 	//199, 231, 50, 103, 168, 144, 117, 47, 201, 67, 245, 137, 219, 7, 254, 234, 2, 157, 3, 151, 148, 51, 109, 16, 189, 157, 145}
 	//db,_ := ethdb.NewLDBDatabase("C:/DB/Double-P",16,1024)
-	idle0, total0 := Exper.GetCPUSample()
+	idle0, total0 := exper.GetCPUSample()
 	db, _ := ethdb.NewLDBDatabase("/media/czh/sn/DB/Original", 16, 128)
 	f, _ := os.Open("/media/czh/sn/record/UniqueA2.txt")
 	s := bufio.NewScanner(f)
@@ -1537,29 +1547,29 @@ func TestMixR7(t *testing.T) {
 	number := 0
 	Count2 := 0
 	t1 := time.Now()
-	countT:=0
-	countA:=0
-	for i:=0;i<1000000;i++{
-		for m:=0;m<7;m++{
-			num:=rand.Intn(10000000)
+	countT := 0
+	countA := 0
+	for i := 0; i < 1000000; i++ {
+		for m := 0; m < 7; m++ {
+			num := rand.Intn(10000000)
 			tx = Txhash[num]
 			txh := BytesToHash(tx)
-			GetTransaction_s(*db,txh)
+			GetTransaction_s(*db, txh)
 			countT++
 		}
 
-		for n:=0;n<3;n++{
-			num:=rand.Intn(10000000)
+		for n := 0; n < 3; n++ {
+			num := rand.Intn(10000000)
 			ac = Account[num]
-			tree,_ := News(root3,db)
+			tree, _ := News(root3, db)
 			v := tree.Get(crypto.Keccak256(ac))
 			countA++
-			if v == nil{
+			if v == nil {
 				Count++
 			}
 		}
 
-		if i % 100000 == 0{
+		if i%100000 == 0 {
 			log2.Println(i)
 		}
 	}
@@ -1573,8 +1583,8 @@ func TestMixR7(t *testing.T) {
 	fmt.Println(cache.HitNumber, cache.MissNumber, float64(cache.HitNumber)/float64(cache.HitNumber+cache.MissNumber))
 	fmt.Println(cache.HitNumber2, cache.MissNumber2, float64(cache.HitNumber2)/float64(cache.HitNumber2+cache.MissNumber2))
 	fmt.Println("命中率", float64(cache.HitNumber+cache.HitNumber2)/float64(cache.HitNumber2+cache.MissNumber2+cache.HitNumber+cache.MissNumber))
-	fmt.Println(countT,countA)
-	idle1, total1 := Exper.GetCPUSample()
+	fmt.Println(countT, countA)
+	idle1, total1 := exper.GetCPUSample()
 	idleTicks := float64(idle1 - idle0)
 	totalTicks := float64(total1 - total0)
 	cpuUsage := 100 * (totalTicks - idleTicks) / totalTicks

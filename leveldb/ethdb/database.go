@@ -1,19 +1,21 @@
 package ethdb
 
 import (
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/rev3z/ledger_base/leveldb"
 	"github.com/rev3z/ledger_base/leveldb/errors"
 	"github.com/rev3z/ledger_base/leveldb/filter"
 	"github.com/rev3z/ledger_base/leveldb/iterator"
 	"github.com/rev3z/ledger_base/leveldb/opt"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
 
 	gometrics "github.com/rcrowley/go-metrics"
 )
+
 type LDBDatabase struct {
 	fn string      // filename for reporting
 	db *leveldb.DB // LevelDB instance
@@ -33,6 +35,7 @@ type LDBDatabase struct {
 
 	log log.Logger // Contextual logger tracking the database path
 }
+
 func NewLDBDatabase(file string, cache int, handles int) (*LDBDatabase, error) {
 
 	// Ensure we have some minimal caching and file guarantees
@@ -49,9 +52,9 @@ func NewLDBDatabase(file string, cache int, handles int) (*LDBDatabase, error) {
 		BlockCacheCapacity:     cache / 2 * opt.MiB,
 		WriteBuffer:            cache / 4 * opt.MiB, // Two of these are used internally
 		Filter:                 filter.NewBloomFilter(10),
-		Compression:opt.NoCompression,
+		Compression:            opt.NoCompression,
 		//ReadOnly:true,
-		DisableBlockCache:true,
+		DisableBlockCache: true,
 	})
 	if _, corrupted := err.(*errors.ErrCorrupted); corrupted {
 		db, err = leveldb.RecoverFile(file, nil)
@@ -61,8 +64,8 @@ func NewLDBDatabase(file string, cache int, handles int) (*LDBDatabase, error) {
 		return nil, err
 	}
 	return &LDBDatabase{
-		fn:  file, // 文件名
-		db:  db, // 数据库对象
+		fn: file, // 文件名
+		db: db,   // 数据库对象
 	}, nil
 }
 func NewLDBDatabase2(file string, cache int, handles int) (*LDBDatabase, error) {
@@ -77,11 +80,11 @@ func NewLDBDatabase2(file string, cache int, handles int) (*LDBDatabase, error) 
 
 	// Open the db and recover any potential corruptions
 	db, err := leveldb.OpenFile(file, &opt.Options{
-		OpenFilesCacheCapacity: handles/2,
+		OpenFilesCacheCapacity: handles / 2,
 		BlockCacheCapacity:     cache / 4 * opt.MiB,
 		WriteBuffer:            cache / 4 * opt.MiB, // Two of these are used internally
 		Filter:                 filter.NewBloomFilter(10),
-		Compression:opt.NoCompression,
+		Compression:            opt.NoCompression,
 		//ReadOnly:true,
 		//DisableBlockCache:true,
 	})
@@ -93,20 +96,20 @@ func NewLDBDatabase2(file string, cache int, handles int) (*LDBDatabase, error) 
 		return nil, err
 	}
 	return &LDBDatabase{
-		fn:  file, // 文件名
-		db:  db, // 数据库对象
+		fn: file, // 文件名
+		db: db,   // 数据库对象
 	}, nil
 }
-
-
 
 func (db *LDBDatabase) Path() string {
 	return db.fn
 }
+
 var (
-	I int
+	I    int
 	Size int
 )
+
 func (db *LDBDatabase) Put(key []byte, value []byte) error {
 	// Measure the database put latency, if requested
 	if db.putTimer != nil {
@@ -120,7 +123,7 @@ func (db *LDBDatabase) Put(key []byte, value []byte) error {
 	}
 	//fmt.Println(i)
 	I++
-	Size += len(key)+len(value)
+	Size += len(key) + len(value)
 	//fmt.Println("From DB",key)
 	return db.db.Put(key, value, nil)
 }
@@ -137,7 +140,7 @@ func (db *LDBDatabase) Put_s(key []byte, value []byte) error {
 	}
 	//fmt.Println(i)
 	I++
-	Size += len(key)+len(value)
+	Size += len(key) + len(value)
 	return db.db.Put_s(key, value, nil)
 }
 
@@ -147,11 +150,12 @@ func (db *LDBDatabase) Has(key []byte) (bool, error) {
 
 // Get returns the given key if it's present.
 var (
-	Ti time.Time
-	Tj time.Time
-	T float64
+	Ti    time.Time
+	Tj    time.Time
+	T     float64
 	Count int
 )
+
 func (db *LDBDatabase) Get(key []byte) ([]byte, error) {
 	// Measure the database get latency, if requested
 	if db.getTimer != nil {
@@ -200,6 +204,7 @@ func (db *LDBDatabase) Get_s(key []byte) ([]byte, error) {
 	return dat, nil
 	//return rle.Decompress(dat)
 }
+
 // Delete deletes the key from the queue and database
 func (db *LDBDatabase) Delete(key []byte) error {
 	// Measure the database delete latency, if requested
@@ -240,18 +245,18 @@ func (db *LDBDatabase) LDB() *leveldb.DB {
 
 // Meter configures the database metrics collectors and
 
-
 // meter periodically retrieves internal leveldb counters and reports them to
 // the metrics subsystem.
 //
 // This is how a stats table look like (currently):
-//   Compactions
-//    Level |   Tables   |    Size(MB)   |    Time(sec)  |    Read(MB)   |   Write(MB)
-//   -------+------------+---------------+---------------+---------------+---------------
-//      0   |          0 |       0.00000 |       1.27969 |       0.00000 |      12.31098
-//      1   |         85 |     109.27913 |      28.09293 |     213.92493 |     214.26294
-//      2   |        523 |    1000.37159 |       7.26059 |      66.86342 |      66.77884
-//      3   |        570 |    1113.18458 |       0.00000 |       0.00000 |       0.00000
+//
+//	Compactions
+//	 Level |   Tables   |    Size(MB)   |    Time(sec)  |    Read(MB)   |   Write(MB)
+//	-------+------------+---------------+---------------+---------------+---------------
+//	   0   |          0 |       0.00000 |       1.27969 |       0.00000 |      12.31098
+//	   1   |         85 |     109.27913 |      28.09293 |     213.92493 |     214.26294
+//	   2   |        523 |    1000.37159 |       7.26059 |      66.86342 |      66.77884
+//	   3   |        570 |    1113.18458 |       0.00000 |       0.00000 |       0.00000
 func (db *LDBDatabase) meter(refresh time.Duration) {
 	// Create the counters to store current and previous values
 	counters := make([][]float64, 2)
@@ -327,7 +332,6 @@ type ldbBatch struct {
 	b    *leveldb.Batch
 	size int
 }
-
 
 func (b *ldbBatch) Put(key, value []byte) error {
 	b.b.Put(key, value)
