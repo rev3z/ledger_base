@@ -22,14 +22,14 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-	"golang.org/x/crypto/sha3"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/rcrowley/go-metrics"
+	"golang.org/x/crypto/sha3"
 )
 
 var (
 	// This is the known root hash of an empty trie.
-	emptyRoot = common.HexToHash("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")
+	emptyRoot  = common.HexToHash("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")
 	emptyRoot2 = []byte("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")
 	// This is the known hash of an empty state trie entry.
 	emptyState common.Hash
@@ -55,7 +55,7 @@ func CacheUnloads() int64 {
 }
 
 func init() {
-	sha3.NewKeccak256().Sum(emptyState[:0])
+	sha3.NewLegacyKeccak256().Sum(emptyState[:0])
 }
 
 // Database must be implemented by backing stores for the trie.
@@ -65,14 +65,14 @@ type Database interface {
 }
 
 // DatabaseReader wraps the Get method of a backing store for the trie.
-//有许多的实现类型
+// 有许多的实现类型
 type DatabaseReader interface {
 	Get(key []byte) (value []byte, err error)
 	Has(key []byte) (bool, error)
 }
 
 // DatabaseWriter wraps the Put method of a backing store for the trie.
-//实现类型应该会更多，可能是直接put数据库，也有可能是put进入batch
+// 实现类型应该会更多，可能是直接put数据库，也有可能是put进入batch
 type DatabaseWriter interface {
 	// Put stores the mapping key->value in the database.
 	// Implementations must not hold onto the value bytes, the trie
@@ -87,9 +87,9 @@ type DatabaseWriter interface {
 //
 // Trie is not safe for concurrent use.
 type Trie struct {
-	root         node //可以是四种node的任意一种
-	db           Database //DatabaseReader & DatabaseWriter
-	originalRoot common.Hash //32字节
+	root          node        //可以是四种node的任意一种
+	db            Database    //DatabaseReader & DatabaseWriter
+	originalRoot  common.Hash //32字节
 	originalRoot2 []byte
 
 	// Cache generation values.
@@ -101,7 +101,7 @@ type Trie struct {
 
 // SetCacheLimit sets the number of 'cache generations' to keep.
 // A cache generation is created by a call to Commit.
-//保存多少次generation
+// 保存多少次generation
 func (t *Trie) SetCacheLimit(l uint16) {
 	t.cachelimit = l
 }
@@ -117,7 +117,7 @@ func (t *Trie) newFlag() nodeFlag {
 // trie is initially empty and does not require a database. Otherwise,
 // New will panic if db is nil and returns a MissingNodeError if root does
 // not exist in the database. Accessing the trie loads nodes from db on demand.
-//若root不为空，则恢复出一课trie
+// 若root不为空，则恢复出一课trie
 func New(root common.Hash, db Database) (*Trie, error) {
 	trie := &Trie{db: db, originalRoot: root}
 	if (root != common.Hash{}) && root != emptyRoot {
@@ -135,7 +135,7 @@ func New(root common.Hash, db Database) (*Trie, error) {
 
 func News(root []byte, db Database) (*Trie, error) {
 	trie := &Trie{db: db, originalRoot2: root}
-	if root != nil{
+	if root != nil {
 		if db == nil {
 			panic("trie.New: cannot use existing root without a database")
 		}
@@ -150,7 +150,7 @@ func News(root []byte, db Database) (*Trie, error) {
 
 // NodeIterator returns an iterator that returns nodes of the trie. Iteration starts at
 // the key after the given start key.
-//trie的迭代器
+// trie的迭代器
 func (t *Trie) NodeIterator(start []byte) NodeIterator {
 	return newNodeIterator(t, start)
 }
@@ -176,9 +176,10 @@ func (t *Trie) TryGet(key []byte) ([]byte, error) {
 	}
 	return value, err
 }
+
 var KVitems int32
 
-func (t *Trie) PtintItems() int32{
+func (t *Trie) PtintItems() int32 {
 	return KVitems
 }
 
@@ -222,13 +223,13 @@ func (t *Trie) tryGet(origNode node, key []byte, pos int) (value []byte, newnode
 	}
 }
 
-//Update associates key with value in the trie. Subsequent calls to
-//Get will return value. If value has length zero, any existing value
-//is deleted from the trie and calls to Get will return nil.
+// Update associates key with value in the trie. Subsequent calls to
+// Get will return value. If value has length zero, any existing value
+// is deleted from the trie and calls to Get will return nil.
 //
-//The value bytes must not be modified by the caller while they are
-//stored in the trie.
-//更新键值对?
+// The value bytes must not be modified by the caller while they are
+// stored in the trie.
+// 更新键值对?
 func (t *Trie) Update(key, value []byte) {
 	if err := t.TryUpdate(key, value); err != nil {
 		log.Error(fmt.Sprintf("Unhandled trie error: %v", err))
@@ -261,7 +262,9 @@ func (t *Trie) TryUpdate(key, value []byte) error {
 	}
 	return nil
 }
+
 var A int
+
 // node是Trie.root，由TryUpdate调用时prefix为nil,key已经经过hex编码
 func (t *Trie) insert(n node, prefix, key []byte, value node) (bool, node, error) {
 	// 当插入的Key和之前重复时，遍历到叶子节点之后，比较valueNode的值是否相等
@@ -496,7 +499,7 @@ func (t *Trie) resolveHash(n hashNode, prefix []byte) (node, error) {
 	if err != nil || enc == nil {
 		return nil, &MissingNodeError{NodeHash: common.BytesToHash(n), Path: prefix}
 	}
-	dec := mustDecodeNode(n, enc, t.cachegen)//value是rlp编码，解码得到node
+	dec := mustDecodeNode(n, enc, t.cachegen) //value是rlp编码，解码得到node
 	return dec, nil
 }
 
@@ -517,7 +520,7 @@ func (t *Trie) Hash() common.Hash {
 //
 // Committing flushes nodes from memory.
 // Subsequent Get calls will load nodes from the database.
-func (t *Trie) Commit() (root common.Hash,n node, err error) {
+func (t *Trie) Commit() (root common.Hash, n node, err error) {
 	if t.db == nil {
 		panic("Commit called on trie with nil database")
 	}
@@ -534,11 +537,11 @@ func (t *Trie) Commit() (root common.Hash,n node, err error) {
 func (t *Trie) CommitTo(db DatabaseWriter) (root common.Hash, n node, err error) { //实际上这个db最后是一个Batch
 	hash, cached, err := t.hashRoot(db)
 	if err != nil {
-		return (common.Hash{}),nil, err
+		return (common.Hash{}), nil, err
 	}
 	t.root = cached // cached是root的副本
 	t.cachegen++
-	return common.BytesToHash(hash.(hashNode)),hash.(hashNode), nil
+	return common.BytesToHash(hash.(hashNode)), hash.(hashNode), nil
 }
 
 func (t *Trie) hashRoot(db DatabaseWriter) (node, node, error) {
@@ -547,5 +550,5 @@ func (t *Trie) hashRoot(db DatabaseWriter) (node, node, error) {
 	}
 	h := newHasher(t.cachegen, t.cachelimit)
 	defer returnHasherToPool(h)
-	return h.hash(t.root, db, nil,true)
+	return h.hash(t.root, db, nil, true)
 }

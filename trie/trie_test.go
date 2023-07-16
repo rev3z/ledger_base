@@ -17,12 +17,13 @@
 package trie
 
 import (
-	"MPT/ethdb"
 	"bufio"
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
+
 	"github.com/rev3z/ledger_base/leveldb/cache"
+	"github.com/rev3z/ledger_base/leveldb/ethdb"
 
 	//"github.com/rev3z/ledger_base/leveldb/cache"
 	"runtime"
@@ -31,16 +32,17 @@ import (
 	//"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/rlp"
 	"io/ioutil"
 	"math/big"
 	"math/rand"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/davecgh/go-spew/spew"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/rlp"
 )
 
 func init() {
@@ -53,7 +55,7 @@ func init() {
 func newPresentp(r []byte) *Trie {
 	//db, _ := ethdb.NewMemDatabase()
 	//指定存储路径、writeBuffer、handle三个参数
-	db,_ := ethdb.NewLDBDatabase("E:/DB/200/200T",16,50)
+	db, _ := ethdb.NewLDBDatabase("E:/DB/200/200T", 16, 50)
 	trie, _ := News(r, db)
 	return trie
 }
@@ -61,7 +63,7 @@ func newPresentp(r []byte) *Trie {
 func newPresentp2(r []byte) *Trie {
 	//db, _ := ethdb.NewMemDatabase()
 	//指定存储路径、writeBuffer、handle三个参数
-	db,_ := ethdb.NewLDBDatabase("E:/DB/200/200P",16,50)
+	db, _ := ethdb.NewLDBDatabase("E:/DB/200/200P", 16, 50)
 	trie, _ := News(r, db)
 	return trie
 }
@@ -166,231 +168,233 @@ func TestNull(t *testing.T) {
 //	}
 //}
 
-
 func NewPresent(r []byte) *Trie {
 	//db, _ := ethdb.NewMemDatabase()
 	//指定存储路径、writeBuffer、handle三个参数
-	db,_ := ethdb.NewLDBDatabase("/media/czh/sn/DB/1",16,1024)
+	db, _ := ethdb.NewLDBDatabase("/media/czh/sn/DB/1", 16, 1024)
 	trie, _ := News(r, db)
 	return trie
 }
 func newEmpty() *Trie {
 	//db, _ := ethdb.NewMemDatabase()
 	//指定存储路径、writeBuffer、handle三个参数，writeBuffer=cache/4
-	db,_ := ethdb.NewLDBDatabase("/media/czh/sn/DB/Acc",16,128)
+	db, _ := ethdb.NewLDBDatabase("/media/czh/sn/DB/Acc", 16, 128)
 	trie, _ := New(common.Hash{}, db)
 	return trie
 }
+
 // Question:为什么会出现一条因为RLP编码长度不够而不存入数据库中？
 // 猜想：当叶子很小时，直接把node放入父节点中。
-func TestDB (t *testing.T){
+func TestDB(t *testing.T) {
 	newEmpty()
 }
-func TestMyInsert(t *testing.T){
+func TestMyInsert(t *testing.T) {
 	//132 0 59 165 252 52 160 208 92 17 70 162 180 18 77 149 155 195 222 231 14 5 150 170 177 231 181 6 178 219 70 170
 	trie := newEmpty()
 	//读文件
-	f,_:=os.Open("/media/czh/sn/record/UniqueA2.txt")
+	f, _ := os.Open("/media/czh/sn/record/UniqueA2.txt")
 	//f2, err := os.OpenFile("E:/DB/record/UniqueA2.txt",os.O_WRONLY | os.O_CREATE | os.O_APPEND,0666)
 	s := bufio.NewScanner(f)
-	count:=0
+	count := 0
 	//countU:=0
 	//B:=0
 	rand.Seed(0)
 	for s.Scan() {
-		value := make([]byte,110)
-		str:=s.Text()
+		value := make([]byte, 110)
+		str := s.Text()
 		key, _ := hex.DecodeString(str[:])
 		rand.Read(value)
 		// 插入MPT,先对Key进行加密变为32，再变成hex码
-		trie.Update(crypto.Keccak256(key),value)
+		trie.Update(crypto.Keccak256(key), value)
 		count++
 	}
 	defer f.Close()
 	// 提交入库
-	root,Proot, err := trie.Commit()
+	root, Proot, err := trie.Commit()
 	//time.Sleep(5e9)
 	fmt.Println("----------------------------------------分割线----------------------------------------")
 	//这里之所以root为32字节，是因为只有这么长，有一个裁剪的过程
-	fmt.Println(count,ethdb.I,ethdb.Size,A)
-	fmt.Println("前缀前Trie树的根：",root)
+	fmt.Println(count, ethdb.I, ethdb.Size, A)
+	fmt.Println("前缀前Trie树的根：", root)
 	// 读的时候有用！
-	fmt.Println("前缀后Tire树的根:",Proot)
-	if err!=nil{
+	fmt.Println("前缀后Tire树的根:", Proot)
+	if err != nil {
 		panic("")
 	}
-   //root3 := []byte{16, 154, 137, 29, 83, 174, 214, 190, 39, 12, 125, 65, 0, 137, 9, 204, 24, 237, 131, 58, 150, 132, 67, 65, 170, 245, 4, 35, 252, 67, 249, 33, 134}
+	//root3 := []byte{16, 154, 137, 29, 83, 174, 214, 190, 39, 12, 125, 65, 0, 137, 9, 204, 24, 237, 131, 58, 150, 132, 67, 65, 170, 245, 4, 35, 252, 67, 249, 33, 134}
 }
+
 // 测试【取消/添加】前缀是否成功
 
-func TestMyInsert2(t *testing.T){
+func TestMyInsert2(t *testing.T) {
 	trie := newEmpty()
 	// 提交入库
-	trie.Update([]byte{1,2,3,4,5}, []byte("catcatcatcatcatcatcatcatcatcat"))
-	trie.Update([]byte{1,2,3,6,7}, []byte("catcatcatcatcatcatcatcatcatcat"))
-	root,Proot, err := trie.Commit()
+	trie.Update([]byte{1, 2, 3, 4, 5}, []byte("catcatcatcatcatcatcatcatcatcat"))
+	trie.Update([]byte{1, 2, 3, 6, 7}, []byte("catcatcatcatcatcatcatcatcatcat"))
+	root, Proot, err := trie.Commit()
 	fmt.Println("----------------------------------------分割线----------------------------------------")
 	//这里之所以root为32字节，是因为只有这么长，有一个裁剪的过程
-	fmt.Println("前缀前Trie树的根：",root)
-	fmt.Println("前缀后Tire树的根:",Proot)
-	if err!=nil{
+	fmt.Println("前缀前Trie树的根：", root)
+	fmt.Println("前缀后Tire树的根:", Proot)
+	if err != nil {
 		panic("")
 	}
 }
 
-func TestMyInsert3(t *testing.T){
+func TestMyInsert3(t *testing.T) {
 	trie := newEmpty()
 	// 提交入库
-	trie.Update([]byte{1,2,3,4,5}, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
-	trie.Update([]byte{1,2,3,4,6}, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
-	trie.Update([]byte{1,2,3,4,7}, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+	trie.Update([]byte{1, 2, 3, 4, 5}, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+	trie.Update([]byte{1, 2, 3, 4, 6}, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+	trie.Update([]byte{1, 2, 3, 4, 7}, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
 	fmt.Println("----------------------------------------分割线----------------------------------------")
-	root2,Proot2, err := trie.Commit()
+	root2, Proot2, err := trie.Commit()
 	fmt.Println("----------------------------------------分割线----------------------------------------")
 	//这里之所以root为32字节，是因为只有这么长，有一个裁剪的过程
-	fmt.Println("前缀前Trie树的根：",root2,A)
-	fmt.Println("前缀后Tire树的根:",Proot2,A,ethdb.I)
-	if err!=nil{
+	fmt.Println("前缀前Trie树的根：", root2, A)
+	fmt.Println("前缀后Tire树的根:", Proot2, A, ethdb.I)
+	if err != nil {
 		panic("")
 	}
 
 }
 
 func TestDDDDD(t *testing.T) {
-	db,_ := ethdb.NewLDBDatabase("/media/czh/sn/DB/1",16,128)
-	root:=[]byte{16, 90 ,244, 113, 162, 254, 31, 109, 220, 17, 80, 166, 233, 239, 149, 154, 68, 165,72, 95, 237, 88, 193, 82, 171, 74, 203, 159, 149, 69, 58, 235, 246}
-	root2:=[]byte{219, 97, 216, 117, 231, 43, 173, 92, 24, 242, 67, 180, 24, 44, 86, 169, 135, 157, 251, 3, 77, 253, 234, 104, 2, 64, 26, 21, 221, 42, 125, 167}
-	v, _ :=db.Get(root)
-	v1, _ :=db.Get(root2)
-	fmt.Println(v,"\n",v1)
+	db, _ := ethdb.NewLDBDatabase("/media/czh/sn/DB/1", 16, 128)
+	root := []byte{16, 90, 244, 113, 162, 254, 31, 109, 220, 17, 80, 166, 233, 239, 149, 154, 68, 165, 72, 95, 237, 88, 193, 82, 171, 74, 203, 159, 149, 69, 58, 235, 246}
+	root2 := []byte{219, 97, 216, 117, 231, 43, 173, 92, 24, 242, 67, 180, 24, 44, 86, 169, 135, 157, 251, 3, 77, 253, 234, 104, 2, 64, 26, 21, 221, 42, 125, 167}
+	v, _ := db.Get(root)
+	v1, _ := db.Get(root2)
+	fmt.Println(v, "\n", v1)
 }
-func TestMyGet3(t *testing.T){
+func TestMyGet3(t *testing.T) {
 	//root:=[]byte{160, 90 ,244, 113, 162, 254, 31, 109, 220, 17, 80, 166, 233, 239, 149, 154, 68, 165,72, 95, 237, 88, 193, 82, 171, 74, 203, 159, 149, 69, 58, 235, 246}
-	root2:=[]byte{219, 97, 216, 117, 231, 43, 173, 92, 24, 242, 67, 180, 24, 44, 86, 169, 135, 157, 251, 3, 77, 253, 234, 104, 2, 64, 26, 21, 221, 42, 125, 167}
-	trie :=NewPresent(root2)
-	v:=trie.Get([]byte{1,2,3,4,5})
-	v1:=trie.Get([]byte{1,2,3,4,6})
-	v2:=trie.Get([]byte{1,2,3,4,7})
-	fmt.Println(v1,v2,v)
+	root2 := []byte{219, 97, 216, 117, 231, 43, 173, 92, 24, 242, 67, 180, 24, 44, 86, 169, 135, 157, 251, 3, 77, 253, 234, 104, 2, 64, 26, 21, 221, 42, 125, 167}
+	trie := NewPresent(root2)
+	v := trie.Get([]byte{1, 2, 3, 4, 5})
+	v1 := trie.Get([]byte{1, 2, 3, 4, 6})
+	v2 := trie.Get([]byte{1, 2, 3, 4, 7})
+	fmt.Println(v1, v2, v)
 }
-//主要用途为测试是否能读到，且查看查询时间。
-func TestMyGet(t *testing.T){
+
+// 主要用途为测试是否能读到，且查看查询时间。
+func TestMyGet(t *testing.T) {
 	//root:=[]byte{132, 0, 59, 165, 252, 52, 160, 208, 92, 17, 70, 162, 180, 18, 77, 149, 155, 195, 222, 231, 14, 5, 150, 170, 177, 231, 181, 6, 178, 219, 70, 170}
-	root:=[]byte{240, 114, 194, 194, 17, 14, 199, 231, 50, 103, 168, 144, 117, 47, 201, 67, 245, 137, 219, 7, 254, 234, 2, 157, 3, 151, 148, 51, 109, 16, 189, 157, 145}
-	db,_ := ethdb.NewLDBDatabase("C:/DB/State",16,1024)
+	root := []byte{240, 114, 194, 194, 17, 14, 199, 231, 50, 103, 168, 144, 117, 47, 201, 67, 245, 137, 219, 7, 254, 234, 2, 157, 3, 151, 148, 51, 109, 16, 189, 157, 145}
+	db, _ := ethdb.NewLDBDatabase("C:/DB/State", 16, 1024)
 	//db,_ := ethdb.NewLDBDatabase("C:/DB/Double-P",16,1024)
 	//tree, _ := News(root, db)
-	f,_:=os.Open("F:/paper/record/UniqueA2.txt")
+	f, _ := os.Open("F:/paper/record/UniqueA2.txt")
 	s := bufio.NewScanner(f)
-	index:=0
-	Count:=0
+	index := 0
+	Count := 0
 	var shijian float64
 	for s.Scan() {
 		tree, _ := News(root, db)
-		str:=s.Text()
+		str := s.Text()
 		key, _ := hex.DecodeString(str[:])
 		// 插入MPT
-		t1:=time.Now()
-		v:=tree.Get(crypto.Keccak256(key))
-		t2:=time.Now()
-		if v == nil{
+		t1 := time.Now()
+		v := tree.Get(crypto.Keccak256(key))
+		t2 := time.Now()
+		if v == nil {
 			index++
 		}
 		shijian += t2.Sub(t1).Seconds()
 		Count++
-		if Count == 10{
+		if Count == 10 {
 			break
 		}
 	}
 	//index = int(trie.PtintItems())
-	fmt.Println("Get耗费时间：",shijian,Count)
-	fmt.Println(index,ethdb.Count,ethdb.T)
-	fmt.Println("qps:",float64(1000000)/ethdb.T,float64(1000000)/shijian)
+	fmt.Println("Get耗费时间：", shijian, Count)
+	fmt.Println(index, ethdb.Count, ethdb.T)
+	fmt.Println("qps:", float64(1000000)/ethdb.T, float64(1000000)/shijian)
 	//fmt.Println(cache.Hit, cache.Miss,float64(cache.Hit)/float64(cache.Hit+cache.Miss))
-	fmt.Println(cache.HitNumber, cache.MissNumber,float64(cache.HitNumber)/float64(cache.HitNumber+cache.MissNumber))
-	fmt.Println(cache.HitNumber2, cache.MissNumber2,float64(cache.HitNumber2)/float64(cache.HitNumber2+cache.MissNumber2))
-	fmt.Println("命中率",float64(cache.HitNumber+cache.HitNumber2)/float64(cache.HitNumber2+cache.MissNumber2+cache.HitNumber+cache.MissNumber))
+	fmt.Println(cache.HitNumber, cache.MissNumber, float64(cache.HitNumber)/float64(cache.HitNumber+cache.MissNumber))
+	fmt.Println(cache.HitNumber2, cache.MissNumber2, float64(cache.HitNumber2)/float64(cache.HitNumber2+cache.MissNumber2))
+	fmt.Println("命中率", float64(cache.HitNumber+cache.HitNumber2)/float64(cache.HitNumber2+cache.MissNumber2+cache.HitNumber+cache.MissNumber))
 	runtime.GC()
 }
 
-func TestMyGetP(t *testing.T){
+func TestMyGetP(t *testing.T) {
 	// 有前缀
 	fmt.Println("1")
-	root:=[]byte{198 ,49 ,76 ,24 ,169 ,136 ,93 ,195 ,207 ,6 ,149 ,84 ,67 ,246 ,115 ,243 ,127 ,218 ,146 ,61 ,82 ,227 ,24 ,25 ,64 ,144 ,131 ,53 ,116 ,145 ,157 ,227}
+	root := []byte{198, 49, 76, 24, 169, 136, 93, 195, 207, 6, 149, 84, 67, 246, 115, 243, 127, 218, 146, 61, 82, 227, 24, 25, 64, 144, 131, 53, 116, 145, 157, 227}
 	trie := newPresentp(root)
-	f,_:=os.Open("E:/record/address.txt")
+	f, _ := os.Open("E:/record/address.txt")
 	s := bufio.NewScanner(f)
-	index:=0
+	index := 0
 	var Address [1000100][]byte
 	var shijian float64
-	T1:=time.Now()
+	T1 := time.Now()
 	for s.Scan() {
-		str:=s.Text()
+		str := s.Text()
 		key, _ := hex.DecodeString(str[:])
 		// 插入MPT
 		Address[index] = key
 		index++
 	}
-	T2:=time.Now()
+	T2 := time.Now()
 	rand.Seed(0)
-	for i:=0;i<10000;i++{
-		j:=rand.Intn(1000000)
-		k:=Address[j]
-		t1:=time.Now()
+	for i := 0; i < 10000; i++ {
+		j := rand.Intn(1000000)
+		k := Address[j]
+		t1 := time.Now()
 		trie.Get(crypto.Keccak256(k))
-		t2:=time.Now()
+		t2 := time.Now()
 		shijian += t2.Sub(t1).Seconds()
 	}
 	index = int(trie.PtintItems())
-	fmt.Println("总共花费时间：",T2.Sub(T1).Seconds())
-	fmt.Println("Get耗费时间：",shijian)
+	fmt.Println("总共花费时间：", T2.Sub(T1).Seconds())
+	fmt.Println("Get耗费时间：", shijian)
 	fmt.Println(index)
-	fmt.Println("qps:",float64(10000)/shijian)
+	fmt.Println("qps:", float64(10000)/shijian)
 	runtime.GC()
 }
 
-func TestMyGetP2(t *testing.T){
+func TestMyGetP2(t *testing.T) {
 	// 未加前缀
 	fmt.Println("1")
-	root:=[]byte{240 ,253 ,95 ,176 ,27 ,69 ,145 ,183 ,146 ,0 ,44 ,84 ,14 ,103 ,158 ,113 ,179 ,234 ,103 ,238 ,213 ,41 ,139 ,151 ,162 ,135 ,10 ,193 ,131 ,237 ,51 ,111 ,35}
+	root := []byte{240, 253, 95, 176, 27, 69, 145, 183, 146, 0, 44, 84, 14, 103, 158, 113, 179, 234, 103, 238, 213, 41, 139, 151, 162, 135, 10, 193, 131, 237, 51, 111, 35}
 	trie := newPresentp2(root)
-	f,_:=os.Open("E:/record/address.txt")
+	f, _ := os.Open("E:/record/address.txt")
 	s := bufio.NewScanner(f)
-	index:=0
+	index := 0
 	var Address [1000100][]byte
 	var shijian float64
-	T1:=time.Now()
+	T1 := time.Now()
 	for s.Scan() {
-		str:=s.Text()
+		str := s.Text()
 		key, _ := hex.DecodeString(str[:])
 		// 插入MPT
 		Address[index] = key
 		index++
 	}
-	T2:=time.Now()
+	T2 := time.Now()
 	rand.Seed(0)
-	for i:=0;i<10000;i++{
-		j:=rand.Intn(1000000)
-		k:=Address[j]
-		t1:=time.Now()
+	for i := 0; i < 10000; i++ {
+		j := rand.Intn(1000000)
+		k := Address[j]
+		t1 := time.Now()
 		trie.Get(crypto.Keccak256(k))
-		t2:=time.Now()
+		t2 := time.Now()
 		shijian += t2.Sub(t1).Seconds()
 	}
 	index = int(trie.PtintItems())
-	fmt.Println("总共花费时间：",T2.Sub(T1).Seconds())
-	fmt.Println("Get耗费时间：",shijian)
+	fmt.Println("总共花费时间：", T2.Sub(T1).Seconds())
+	fmt.Println("Get耗费时间：", shijian)
 	fmt.Println(index)
-	fmt.Println("qps:",float64(10000)/shijian)
+	fmt.Println("qps:", float64(10000)/shijian)
 	runtime.GC()
 }
 
 func TestInsert(t *testing.T) {
 	trie := newEmpty() //new一棵树，用的内存数据库
 
-	updateString(trie, "doe", "reindeer")//insert
-	updateString(trie, "dog", "puppy")//update？
-	updateString(trie, "dogglesworth", "cat")//insert
+	updateString(trie, "doe", "reindeer")     //insert
+	updateString(trie, "dog", "puppy")        //update？
+	updateString(trie, "dogglesworth", "cat") //insert
 
 	exp := common.HexToHash("8aad789dff2f538bca5d8ea56e8abe10f4c7ba3a5dea95fea4cd6e7c3a1168d3")
 	root := trie.Hash()
@@ -400,12 +404,12 @@ func TestInsert(t *testing.T) {
 
 	trie = newEmpty()
 	updateString(trie, "A", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-	str:="d23786fb4a010da3ce639d66d5e904a11dbc02746d1ce25029e53290cabf28ab"
+	str := "d23786fb4a010da3ce639d66d5e904a11dbc02746d1ce25029e53290cabf28ab"
 	fmt.Println(str)
 	//HexToHash,将hex编码string转化为Hash32字节
 	exp = common.HexToHash("d23786fb4a010da3ce639d66d5e904a11dbc02746d1ce25029e53290cabf28ab")
 	fmt.Println(exp)
-	root,_, err := trie.Commit()
+	root, _, err := trie.Commit()
 	fmt.Println(root)
 	if err != nil {
 		t.Fatalf("commit error: %v", err)
@@ -505,7 +509,7 @@ func TestReplication(t *testing.T) {
 	for _, val := range vals {
 		updateString(trie, val.k, val.v)
 	}
-	exp,_, err := trie.Commit()
+	exp, _, err := trie.Commit()
 	if err != nil {
 		t.Fatalf("commit error: %v", err)
 	}
@@ -520,7 +524,7 @@ func TestReplication(t *testing.T) {
 			t.Errorf("trie2 doesn't have %q => %q", kv.k, kv.v)
 		}
 	}
-	hash,_, err := trie2.Commit()
+	hash, _, err := trie2.Commit()
 	if err != nil {
 		t.Fatalf("commit error: %v", err)
 	}
@@ -574,7 +578,7 @@ func TestCacheUnload(t *testing.T) {
 	key2 := "---some other branch"
 	updateString(trie, key1, "this is the branch of key1.")
 	updateString(trie, key2, "this is the branch of key2.")
-	root,_, _ := trie.Commit()
+	root, _, _ := trie.Commit()
 
 	// Commit the trie repeatedly and access key1.
 	// The branch containing it is loaded from DB exactly two times:
@@ -746,9 +750,9 @@ func checkCacheInvariant(n, parent node, parentCachegen uint16, parentDirty bool
 //	}
 //}
 
-func BenchmarkGet(b *testing.B)      { benchGet(b, false) }
+func BenchmarkGet(b *testing.B) { benchGet(b, false) }
 
-func BenchmarkGetDB(b *testing.B)    { benchGet(b, true) }
+func BenchmarkGetDB(b *testing.B) { benchGet(b, true) }
 
 func BenchmarkUpdateBE(b *testing.B) { benchUpdate(b, binary.BigEndian) }
 
