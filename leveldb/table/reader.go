@@ -509,7 +509,7 @@ func (i *indexIter) Get() iterator.Iterator {
 
 // Reader is a table reader.
 type Reader struct {
-	mu     sync.RWMutex //锁
+	mu     sync.RWMutex     //锁
 	fd     storage.FileDesc //文件描述符
 	reader io.ReaderAt
 	cache  *cache.NamespaceGetter
@@ -518,8 +518,8 @@ type Reader struct {
 	// Options
 	o              *opt.Options
 	cmp            comparer.Comparer //比较
-	filter         filter.Filter //过滤器
-	verifyChecksum bool //crc？
+	filter         filter.Filter     //过滤器
+	verifyChecksum bool              //crc？
 
 	dataEnd                   int64
 	metaBH, indexBH, filterBH blockHandle //Handle
