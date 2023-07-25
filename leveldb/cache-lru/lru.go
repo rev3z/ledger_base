@@ -10,6 +10,7 @@ import (
 	"sync"
 	"unsafe"
 )
+
 // lru双向循环链表
 type lruNode struct {
 	n   *Node
@@ -33,6 +34,7 @@ func (n *lruNode) Equalinsert(at *lruNode) {
 	at.next = n
 	at.next.prev = n
 }
+
 // 循环链表删除操作，删除n
 func (n *lruNode) remove() {
 	if n.prev != nil {
@@ -44,25 +46,29 @@ func (n *lruNode) remove() {
 		panic("BUG: removing removed node")
 	}
 }
+
 // 锁、总容量、使用的容量、lruNode
 type lru struct {
 	mu       sync.Mutex
-	capacity int // 表示缓存的总容量
-	used     int // 使用的容量
+	capacity int     // 表示缓存的总容量
+	used     int     // 使用的容量
 	recent   lruNode // 双向循环链表的head
 }
+
 // 重置lru链表，使用为0
 func (r *lru) reset() {
 	r.recent.next = &r.recent
 	r.recent.prev = &r.recent
 	r.used = 0
 }
+
 // 返回容量
 func (r *lru) Capacity() int {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	return r.capacity
 }
+
 // 设置容量
 func (r *lru) SetCapacity(capacity int) {
 	var evicted []*lruNode
@@ -75,9 +81,9 @@ func (r *lru) SetCapacity(capacity int) {
 		if rn == nil {
 			panic("BUG: invalid LRU used or capacity counter")
 		}
-		rn.remove() // 移除
-		rn.n.CacheData = nil // CacheData为缓存数据
-		r.used -= rn.n.Size() // 已用空间减少
+		rn.remove()                   // 移除
+		rn.n.CacheData = nil          // CacheData为缓存数据
+		r.used -= rn.n.Size()         // 已用空间减少
 		evicted = append(evicted, rn) //将rn记录在evicted切片中
 	}
 	r.mu.Unlock()
@@ -86,17 +92,19 @@ func (r *lru) SetCapacity(capacity int) {
 		rn.h.Release() // 将evicted的所有lruNode释放Handle
 	}
 }
+
 // 1、如果是从磁盘中读出来的数据，n.cachedata在之前并未赋值，因此是nil。n.Size()通过前文的setFun函数可以知道是1，
-//而r.capacity的定义是在cmd/utils/flags.go中，默认1024.因此新数据直接插入到lru的队尾，而队头的数据也是最老的缓存则删掉。
+// 而r.capacity的定义是在cmd/utils/flags.go中，默认1024.因此新数据直接插入到lru的队尾，而队头的数据也是最老的缓存则删掉。
 // 2、如果是从缓存读出来的数据，则通过rn.insert将数据从队中提出来放到队尾，保证队尾放的数据都是最新读取的缓存。
 // 目的：将缓存放入buckets
 // 主要为两种情况，一种是新的，另一种不是新的
 var (
-	HitNumber int64
-	MissNumber int64
-	HitNumber2 int64
+	HitNumber   int64
+	MissNumber  int64
+	HitNumber2  int64
 	MissNumber2 int64
 )
+
 func (r *lru) Promote(n *Node) {
 	var evicted []*lruNode
 
@@ -107,9 +115,9 @@ func (r *lru) Promote(n *Node) {
 		if n.Size() <= r.capacity { // 必须得<最大容量，否则根本写不进去
 			// 赋值Node和Handle，然后插入到lru链表中，h指向node【return &Handle{unsafe.Pointer(n)}】
 			rn := &lruNode{n: n, h: n.GetHandle()}
-			rn.insert(&r.recent) // 插入到头节点之后
+			rn.insert(&r.recent)             // 插入到头节点之后
 			n.CacheData = unsafe.Pointer(rn) // 任意类型且可寻址的指针值，CacheData为lruNode的指针
-			r.used += n.Size() // 容量变化
+			r.used += n.Size()               // 容量变化
 			// 超出容量就继续remove
 			for r.used > r.capacity {
 				rn := r.recent.prev
@@ -122,7 +130,7 @@ func (r *lru) Promote(n *Node) {
 				evicted = append(evicted, rn)
 			}
 		}
-	// 否则就是从缓存中读的，已经被插入到lru中，应先删除掉，然后再插入
+		// 否则就是从缓存中读的，已经被插入到lru中，应先删除掉，然后再插入
 	} else {
 		HitNumber++
 		rn := (*lruNode)(n.CacheData) // 取出rn来，为lruNode的指针类型
@@ -137,6 +145,7 @@ func (r *lru) Promote(n *Node) {
 		rn.h.Release()
 	}
 }
+
 // 为ban赋值true或者false，何意？
 // 在Cacher.Delete中被调用，标记为true，用以删除？
 func (r *lru) Ban(n *Node) {
@@ -220,4 +229,3 @@ func NewLRU(capacity int) Cacher {
 	r.reset()
 	return r
 }
-

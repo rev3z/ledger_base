@@ -163,43 +163,43 @@ func TestCacheMap(t *testing.T) {
 	}
 }
 
-func TestMyCache(t *testing.T){
+func TestMyCache(t *testing.T) {
 	c := NewCache(NewLRU(10))
 	if c.Capacity() != 10 {
 		t.Errorf("invalid capacity: want=%d got=%d", 10, c.Capacity())
 	}
 	// charge表示大小，占用capacity
 	set(c, 0, 1, 1, 1, nil).Release() // 被t到r1
-	fmt.Println(c.Nodes(),c.size,c.cacher.(*lru).rused)
+	fmt.Println(c.Nodes(), c.size, c.cacher.(*lru).rused)
 	set(c, 0, 2, 2, 2, nil).Release() // 被t到r1
-	fmt.Println(c.Nodes(),c.size,c.cacher.(*lru).rused)
-	set(c, 0, 5,  3, 2,nil).Release() // 被t到r1
-	fmt.Println(c.Nodes(),c.size,c.cacher.(*lru).rused)
+	fmt.Println(c.Nodes(), c.size, c.cacher.(*lru).rused)
+	set(c, 0, 5, 3, 2, nil).Release() // 被t到r1
+	fmt.Println(c.Nodes(), c.size, c.cacher.(*lru).rused)
 	set(c, 1, 1, 3, 3, nil).Release()
-	fmt.Println(c.Nodes(),c.Size(),c.cacher.(*lru).rused)
+	fmt.Println(c.Nodes(), c.Size(), c.cacher.(*lru).rused)
 	set(c, 2, 1, 4, 1, nil).Release()
-	fmt.Println(c.Nodes(),c.Size(),c.cacher.(*lru).rused) // 5-9
+	fmt.Println(c.Nodes(), c.Size(), c.cacher.(*lru).rused) // 5-9
 	set(c, 2, 2, 5, 1, nil).Release()
-	fmt.Println(c.Nodes(),c.Size(),c.cacher.(*lru).rused) // 6-10,但是rused为9，r1used为1
+	fmt.Println(c.Nodes(), c.Size(), c.cacher.(*lru).rused) // 6-10,但是rused为9，r1used为1
 	set(c, 2, 3, 6, 1, nil).Release()
-	fmt.Println(c.Nodes(),c.Size(),c.cacher.(*lru).rused) // 11,此时rused为8，r1uesd为3
+	fmt.Println(c.Nodes(), c.Size(), c.cacher.(*lru).rused) // 11,此时rused为8，r1uesd为3
 	set(c, 2, 4, 7, 1, nil).Release()
-	fmt.Println(c.Nodes(),c.Size(),c.cacher.(*lru).rused) // 12，此时rused为9，r1used为3
-	set(c, 2, 5, 8, 1, nil).Release() // 此时，rused为8，r1used为5，trigger为0
-	p:=c.Get(0,5,nil) //5，5，2，0，6
+	fmt.Println(c.Nodes(), c.Size(), c.cacher.(*lru).rused) // 12，此时rused为9，r1used为3
+	set(c, 2, 5, 8, 1, nil).Release()                       // 此时，rused为8，r1used为5，trigger为0
+	p := c.Get(0, 5, nil)                                   //5，5，2，0，6
 	fmt.Println(p.Value())
-	fmt.Println(c.cacher.(*lru).r1used,c.cacher.(*lru).f1used,c.cacher.(*lru).rused,c.cacher.(*lru).fused)
-	fmt.Println(c.cacher.(*lru).trriger,c.cacher.(*lru).capacity)
+	fmt.Println(c.cacher.(*lru).r1used, c.cacher.(*lru).f1used, c.cacher.(*lru).rused, c.cacher.(*lru).fused)
+	fmt.Println(c.cacher.(*lru).trriger, c.cacher.(*lru).capacity)
 }
 
-func TestARC_HitMiss(t *testing.T){
+func TestARC_HitMiss(t *testing.T) {
 	c := NewCache(NewLRU(1000))
 	if c.Capacity() != 1000 {
 		t.Errorf("invalid capacity: want=%d got=%d", 10, c.Capacity())
 	}
 	rand.Seed(time.Now().Unix())
 	value := "1"
-	for i:=0;i<5000;i++{
+	for i := 0; i < 5000; i++ {
 		//go func() {
 		//	for j:=0;j<200;j++{
 		//		key := rand.Intn(10000)
@@ -212,26 +212,26 @@ func TestARC_HitMiss(t *testing.T){
 		//		}
 		//	}
 		//}()
-		for j:=0;j<200;j++{
+		for j := 0; j < 200; j++ {
 			//fmt.Println(i,j)
-			if i==206 && j==103{
+			if i == 206 && j == 103 {
 				fmt.Println("")
 			}
 			key := rand.Intn(40000)
-			p:=c.Get(0, uint64(key),nil) // only read, in fact, p should be nil!
-			if p == nil{
-				set(c,0, uint64(key),value,len(value),nil).Release()
-			}else {
+			p := c.Get(0, uint64(key), nil) // only read, in fact, p should be nil!
+			if p == nil {
+				set(c, 0, uint64(key), value, len(value), nil).Release()
+			} else {
 			}
 		}
 	}
-//	time.Sleep(10e9)
+	//	time.Sleep(10e9)
 	fmt.Println("-----------------------------------------")
-	fmt.Printf("r1used:%d, f1used:%d, rused:%d, fused:%d\n",c.cacher.(*lru).r1used,c.cacher.(*lru).f1used,c.cacher.(*lru).rused,c.cacher.(*lru).fused)
-	fmt.Printf("trriger:%d, capacity:%d\n",c.cacher.(*lru).trriger,c.cacher.(*lru).capacity)
+	fmt.Printf("r1used:%d, f1used:%d, rused:%d, fused:%d\n", c.cacher.(*lru).r1used, c.cacher.(*lru).f1used, c.cacher.(*lru).rused, c.cacher.(*lru).fused)
+	fmt.Printf("trriger:%d, capacity:%d\n", c.cacher.(*lru).trriger, c.cacher.(*lru).capacity)
 	c.Time()
-	fmt.Println(HitNumber,MissNumber)
-	fmt.Println((float64(HitNumber))/float64(HitNumber+MissNumber))
+	fmt.Println(HitNumber, MissNumber)
+	fmt.Println((float64(HitNumber)) / float64(HitNumber+MissNumber))
 	fmt.Println("-----------------------------------------")
 }
 
@@ -389,12 +389,12 @@ func TestLRUCache_HitMiss(t *testing.T) {
 	if setfin != len(cases) {
 		t.Errorf("some set finalizer may not be executed, want=%d got=%d", len(cases), setfin)
 	}
-	fmt.Println(setfin,hitMiss)
+	fmt.Println(setfin, hitMiss)
 }
 
 func TestCacheMap_NodesAndSize(t *testing.T) {
 	c := NewCache(nil)
-	if c.Nodes() != 0 {	
+	if c.Nodes() != 0 {
 		t.Errorf("invalid nodes counter: want=%d got=%d", 0, c.Nodes())
 	}
 	if c.Size() != 0 {
@@ -412,6 +412,7 @@ func TestCacheMap_NodesAndSize(t *testing.T) {
 	}
 }
 
+// TODO: failed TestMyCache
 func TestLRUCache_Capacity(t *testing.T) {
 	c := NewCache(NewLRU(10))
 	if c.Capacity() != 10 {
@@ -423,13 +424,13 @@ func TestLRUCache_Capacity(t *testing.T) {
 	set(c, 0, 2, 2, 2, nil).Release()
 	fmt.Println(c.Nodes())
 	set(c, 1, 1, 3, 3, nil).Release()
-	fmt.Println(c.Nodes(),c.Size())
+	fmt.Println(c.Nodes(), c.Size())
 	set(c, 2, 1, 4, 1, nil).Release()
 	fmt.Println(c.Nodes())
 	set(c, 2, 2, 5, 1, nil).Release()
 	fmt.Println(c.Nodes())
 	set(c, 2, 3, 6, 1, nil).Release()
-	fmt.Println(c.Nodes(),c.Size())
+	fmt.Println(c.Nodes(), c.Size())
 	set(c, 2, 4, 7, 1, nil).Release()
 	fmt.Println(c.Nodes())
 	set(c, 2, 5, 8, 1, nil).Release()
@@ -468,6 +469,7 @@ func TestCacheMap_NilValue(t *testing.T) {
 	}
 }
 
+// TODO: failed
 func TestLRUCache_Eviction(t *testing.T) {
 	c := NewCache(NewLRU(12))
 	o1 := set(c, 0, 1, 1, 1, nil)
@@ -515,6 +517,7 @@ func TestLRUCache_Eviction(t *testing.T) {
 	}
 }
 
+// TODO: failed
 func TestLRUCache_Evict(t *testing.T) {
 	c := NewCache(NewLRU(6))
 	set(c, 0, 1, 1, 1, nil).Release()

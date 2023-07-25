@@ -71,6 +71,7 @@ const (
 	mOverflowThreshold     = 1 << 5 // 32
 	mOverflowGrowThreshold = 1 << 7 // 128
 )
+
 // mBucket中含有一个一个的Node
 type mBucket struct {
 	mu     sync.Mutex
@@ -87,12 +88,12 @@ func (b *mBucket) freeze() []*Node {
 	}
 	return b.node
 }
+
 // 取值//而对于mbucket来说。遍历bucket中的node，如果找到就加1.然后找不到的话，就生成新node，天生的ref为1。
 // 加入bucket中。如果这个bucket的大小大于32.那么就认为overflow了。如果mnode发现overflow的bucket大于1<<7,也就是128个。
 // 或者说，当前mnode总共存的node数量大于mbuckets * 128。 overflow指的是每一个bucket超过32的node的数量。
 
-
-func (b *mBucket) Length(){
+func (b *mBucket) Length() {
 	fmt.Println(len(b.node))
 }
 func (b *mBucket) get(r *Cache, h *mNode, hash uint32, ns, key uint64, noset bool) (done, added bool, n *Node) {
@@ -106,7 +107,7 @@ func (b *mBucket) get(r *Cache, h *mNode, hash uint32, ns, key uint64, noset boo
 	// 扫描当前bucket中所有的node，查找hash、ns、key符合条件的，然后被查找的ref引用+1
 	for _, n := range b.node {
 		// lruNode的满载不删除节点，而是把Node放入ghost中，并之value为空
-		if n.hash == hash && n.ns == ns && n.key == key  {
+		if n.hash == hash && n.ns == ns && n.key == key {
 			atomic.AddInt32(&n.ref, 1)
 			b.mu.Unlock()
 			return true, false, n
@@ -165,6 +166,7 @@ func (b *mBucket) get(r *Cache, h *mNode, hash uint32, ns, key uint64, noset boo
 
 	return true, true, n
 }
+
 // 删除
 func (b *mBucket) delete(r *Cache, h *mNode, hash uint32, ns, key uint64) (done, deleted bool) {
 	b.mu.Lock()
@@ -401,7 +403,7 @@ func (r *Cache) Get(ns, key uint64, setFunc func() (size int, value Value)) *Han
 	//  调用b.get后，如果没找到，会新增，新增的node，value和CacheData为nil，以此辨别。
 	hash := murmur32(ns, key, 0xf00)
 	for {
-		h, b := r.getBucket(hash) //mNode、mBucket，bucket下标
+		h, b := r.getBucket(hash)                                //mNode、mBucket，bucket下标
 		done, _, n := b.get(r, h, hash, ns, key, setFunc == nil) // hash、key、ns判断是否相等，n为Node，如果没找到，则新建一个Node
 		if done {
 			if n != nil {

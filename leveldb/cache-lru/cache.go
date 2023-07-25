@@ -71,6 +71,7 @@ const (
 	mOverflowThreshold     = 1 << 5 // 32
 	mOverflowGrowThreshold = 1 << 7 // 128
 )
+
 // mBucket中含有一个一个的Node
 type mBucket struct {
 	mu     sync.Mutex
@@ -87,11 +88,13 @@ func (b *mBucket) freeze() []*Node {
 	}
 	return b.node
 }
+
 // 取值，从一个bucket中找
 // 而对于mbucket来说。遍历bucket中的node，如果找到就加1.然后找不到的话，就生成新node，天生的ref为1。
 // 加入bucket中。如果这个bucket的大小大于32.那么就认为overflow了。如果mnode发现overflow的bucket大于1<<7,也就是128个。
 // 或者说，当前mnode总共存的node数量大于mbuckets * 128。 overflow指的是每一个bucket超过32的node的数量。
 var hitMiss = 0
+
 func (b *mBucket) get(r *Cache, h *mNode, hash uint32, ns, key uint64, noset bool) (done, added bool, n *Node) {
 	b.mu.Lock()
 
@@ -141,7 +144,7 @@ func (b *mBucket) get(r *Cache, h *mNode, hash uint32, ns, key uint64, noset boo
 			buckets:         make([]unsafe.Pointer, nhLen),
 			mask:            uint32(nhLen) - 1,
 			pred:            unsafe.Pointer(h),
-			growThreshold:   int32(nhLen * mOverflowThreshold),
+			growThreshold:   int32(nhLen * mOverflowThreshold), // 溢出阈值 相当于所有bucket溢出一倍时，启动扩容
 			shrinkThreshold: int32(nhLen >> 1),
 		}
 		ok := atomic.CompareAndSwapPointer(&r.mHead, unsafe.Pointer(h), unsafe.Pointer(nh))
@@ -153,6 +156,7 @@ func (b *mBucket) get(r *Cache, h *mNode, hash uint32, ns, key uint64, noset boo
 
 	return true, true, n
 }
+
 // 删除
 func (b *mBucket) delete(r *Cache, h *mNode, hash uint32, ns, key uint64) (done, deleted bool) {
 	b.mu.Lock()
@@ -203,7 +207,7 @@ func (b *mBucket) delete(r *Cache, h *mNode, hash uint32, ns, key uint64) (done,
 			atomic.AddInt32(&h.overflow, -1)
 		}
 
-		// Shrink.
+		// Shrink. 调整整个哈希表的大小
 		if shrink && len(h.buckets) > mInitialSize && atomic.CompareAndSwapInt32(&h.resizeInProgess, 0, 1) {
 			nhLen := len(h.buckets) >> 1
 			nh := &mNode{
@@ -227,13 +231,13 @@ func (b *mBucket) delete(r *Cache, h *mNode, hash uint32, ns, key uint64) (done,
 // mnode放着一堆bucket的指针，管理bucket？
 type mNode struct {
 	buckets         []unsafe.Pointer // []*mBucket
-	mask            uint32
-	pred            unsafe.Pointer // *mNode
-	resizeInProgess int32
+	mask            uint32           // 用于计算桶的索引位置
+	pred            unsafe.Pointer   // *mNode 指向前一个mNode节点
+	resizeInProgess int32            // 用于指示是否正在进行缓存大小调整的操作
 
-	overflow        int32
-	growThreshold   int32
-	shrinkThreshold int32
+	overflow        int32 // 用于记录缓存桶溢出数量
+	growThreshold   int32 // 用于设置缓存桶扩展的阈值
+	shrinkThreshold int32 // 用于设置缓存桶收缩的阈值
 }
 
 func (n *mNode) initBucket(i uint32) *mBucket {
@@ -246,14 +250,14 @@ func (n *mNode) initBucket(i uint32) *mBucket {
 		var node []*Node
 		if n.mask > p.mask {
 			// Grow.
-			pb := (*mBucket)(atomic.LoadPointer(&p.buckets[i&p.mask]))
+			pb := (*mBucket)(atomic.LoadPointer(&p.buckets[i&p.mask])) // 旧内容直接入桶
 			if pb == nil {
-				pb = p.initBucket(i & p.mask)
+				pb = p.initBucket(i & p.mask) // 递归渐进迁移
 			}
 			m := pb.freeze()
 			// Split nodes.
 			for _, x := range m {
-				if x.hash&n.mask == i {
+				if x.hash&n.mask == i { // 扩大了mask后的新内容
 					node = append(node, x)
 				}
 			}
@@ -263,7 +267,7 @@ func (n *mNode) initBucket(i uint32) *mBucket {
 			if pb0 == nil {
 				pb0 = p.initBucket(i)
 			}
-			pb1 := (*mBucket)(atomic.LoadPointer(&p.buckets[i+uint32(len(n.buckets))]))
+			pb1 := (*mBucket)(atomic.LoadPointer(&p.buckets[i+uint32(len(n.buckets))])) // 之前是两倍数量的桶
 			if pb1 == nil {
 				pb1 = p.initBucket(i + uint32(len(n.buckets)))
 			}
@@ -277,7 +281,7 @@ func (n *mNode) initBucket(i uint32) *mBucket {
 		b := &mBucket{node: node}
 		if atomic.CompareAndSwapPointer(&n.buckets[i], nil, unsafe.Pointer(b)) {
 			if len(node) > mOverflowThreshold {
-				atomic.AddInt32(&n.overflow, int32(len(node)-mOverflowThreshold))
+				atomic.AddInt32(&n.overflow, int32(len(node)-mOverflowThreshold)) // 溢出数量
 			}
 			return b
 		}
@@ -322,6 +326,7 @@ func NewCache(cacher Cacher) *Cache {
 	}
 	return r
 }
+
 // 根据hash选mBucket，返回桶列表和一个桶
 func (r *Cache) getBucket(hash uint32) (*mNode, *mBucket) {
 	h := (*mNode)(atomic.LoadPointer(&r.mHead))
@@ -332,6 +337,7 @@ func (r *Cache) getBucket(hash uint32) (*mNode, *mBucket) {
 	}
 	return h, b
 }
+
 // 找到桶，在桶内删除
 func (r *Cache) delete(n *Node) bool {
 	for {
@@ -392,7 +398,7 @@ func (r *Cache) Get(ns, key uint64, setFunc func() (size int, value Value)) *Han
 
 	hash := murmur32(ns, key, 0xf00)
 	for {
-		h, b := r.getBucket(hash) //mNode、mBucket，找到该放到哪一个桶中，bucket
+		h, b := r.getBucket(hash)                                //mNode、mBucket，找到该放到哪一个桶中，bucket
 		done, _, n := b.get(r, h, hash, ns, key, setFunc == nil) // 第二个返回值表明是存了还是取了
 		if done {
 			if n != nil { // n为Node
@@ -649,6 +655,8 @@ func (n *Node) unref() {
 }
 
 func (n *Node) unrefLocked() {
+	tmp := atomic.LoadInt32(&n.ref)
+	fmt.Println("refcall remain:", n.key, " ", tmp)
 	if atomic.AddInt32(&n.ref, -1) == 0 {
 		n.r.mu.RLock()
 		if !n.r.closed {

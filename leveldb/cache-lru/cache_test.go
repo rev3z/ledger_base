@@ -54,17 +54,18 @@ func set(c *Cache, ns, key uint64, value Value, charge int, relf func()) *Handle
 type cacheMapTestParams struct {
 	nobjects, nhandles, concurrent, repeat int
 }
-func TestARC_HitMiss(t *testing.T){
+
+func TestARC_HitMiss(t *testing.T) {
 	c := NewCache(NewLRU(500))
 	if c.Capacity() != 500 {
 		t.Errorf("invalid capacity: want=%d got=%d", 10, c.Capacity())
 	}
 	//rand.Seed(time.Now().Unix())
 	value := "1"
-	var(
-		hit,miss float64
+	var (
+		hit, miss float64
 	)
-	for i:=0;i<5000;i++{
+	for i := 0; i < 5000; i++ {
 		//go func() {
 		//	for j:=0;j<200;j++{
 		//		key := rand.Intn(10000)
@@ -77,13 +78,13 @@ func TestARC_HitMiss(t *testing.T){
 		//		}
 		//	}
 		//}()
-		for j:=0;j<200;j++{
+		for j := 0; j < 200; j++ {
 			key := rand.Intn(40000)
-			p:=c.Get(0, uint64(key),nil) // only read, in fact, p should be nil!
-			if p == nil{
+			p := c.Get(0, uint64(key), nil) // only read, in fact, p should be nil!
+			if p == nil {
 				miss++
-				set(c,0, uint64(key),value,len(value),nil).Release()
-			}else {
+				set(c, 0, uint64(key), value, len(value), nil).Release()
+			} else {
 				hit++
 			}
 			//if i*j == 93100{
@@ -93,14 +94,14 @@ func TestARC_HitMiss(t *testing.T){
 	}
 	//	time.Sleep(10e9)
 	fmt.Println("-----------------------------------------")
-	fmt.Println("used is:",c.cacher.(*lru).used)
-	p:=hit+miss
-	fmt.Println(hit,miss)
-	fmt.Println((hit/p))
+	fmt.Println("used is:", c.cacher.(*lru).used)
+	p := hit + miss
+	fmt.Println(hit, miss)
+	fmt.Println((hit / p))
 	fmt.Println("-----------------------------------------")
 }
 
-func TestARC_HitMiss2(t *testing.T){
+func TestARC_HitMiss2(t *testing.T) {
 	cases := []struct {
 		key   uint64
 		value string
@@ -115,31 +116,31 @@ func TestARC_HitMiss2(t *testing.T){
 		{2, "v"},
 		{3, "v"},
 		{9, "v"},
-		{11,"v"},
+		{11, "v"},
 	}
 	c := NewCache(NewLRU(10))
-	var(
-		hit,miss float64
+	var (
+		hit, miss float64
 	)
-	for j:=0;j<200;j++{
-		i:=j%11
-		p:=c.Get(0, cases[i].key,nil) // only read, in fact, p should be nil!
-		if p == nil{
+	for j := 0; j < 200; j++ {
+		i := j % 11
+		p := c.Get(0, cases[i].key, nil) // only read, in fact, p should be nil!
+		if p == nil {
 			miss++
-			set(c,0, cases[i].key,cases[i].value,len(cases[i].value),nil).Release()
-		}else {
+			set(c, 0, cases[i].key, cases[i].value, len(cases[i].value), nil).Release()
+		} else {
 			hit++
 		}
-		if j == 9{
+		if j == 9 {
 			fmt.Println("")
 		}
 	}
 	fmt.Println("-----------------------------------------")
 	fmt.Println(cases[0])
-	fmt.Println("used is:",c.cacher.(*lru).used)
-	p:=hit+miss
-	fmt.Println(hit,miss)
-	fmt.Println((hit/p))
+	fmt.Println("used is:", c.cacher.(*lru).used)
+	p := hit + miss
+	fmt.Println(hit, miss)
+	fmt.Println((hit / p))
 	fmt.Println("-----------------------------------------")
 }
 
@@ -278,17 +279,17 @@ func TestLRUCache_Capacity(t *testing.T) {
 	}
 	// charge表示大小，占用capacity
 	set(c, 0, 1, 1, 1, nil).Release()
-	fmt.Println(c.Nodes(),)
+	fmt.Println(c.Nodes())
 	set(c, 0, 2, 2, 2, nil).Release()
 	fmt.Println(c.Nodes())
 	set(c, 1, 1, 3, 3, nil).Release()
-	fmt.Println(c.Nodes(),c.Size())
+	fmt.Println(c.Nodes(), c.Size())
 	set(c, 2, 1, 4, 1, nil).Release()
 	fmt.Println(c.Nodes())
 	set(c, 2, 2, 5, 1, nil).Release()
 	fmt.Println(c.Nodes())
 	set(c, 2, 3, 6, 1, nil).Release()
-	fmt.Println(c.Nodes(),c.Size())
+	fmt.Println(c.Nodes(), c.Size())
 	set(c, 2, 4, 7, 1, nil).Release()
 	fmt.Println(c.Nodes())
 	set(c, 2, 5, 8, 1, nil).Release()
